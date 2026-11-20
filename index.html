@@ -102,7 +102,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='12 (2026-11-20)';
+const APP_VERSION='13 (2026-11-20)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -235,7 +235,7 @@ function vEnfants(){
  `<div class="card"><div class="row"><div class="field"><label>보기</label><select onchange="UI.f.s=this.value;render()">${[['on',`장학 중 (${on})`],['nodon',`후원자 없는 장학생 (${DB.enfants.filter(e=>isOn(e)&&!donsOf(e.id).length).length})`],['off',`장학 끝남 (${DB.enfants.length-on})`],['all','전체']].map(([v,l])=>`<option value="${v}" ${f.s===v?'selected':''}>${l}</option>`).join('')}</select></div>
  <div class="field" style="flex:1"><label>찾기 (이름·부모·전화·학교)</label><input id="q" value="${esc(f.q)}" oninput="UI.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{render();const i=$('#q');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)"></div></div></div>
  <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th>생년월일</th><th>나이</th><th>성별</th><th>학교 · 학년</th><th>후원자</th></tr></thead><tbody>
- ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td><b>${esc(e.nom)}</b>${!isOn(e)?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${[esc(e.ecole),esc(e.classe)].filter(Boolean).join(' · ')}</td><td onclick="event.stopPropagation()">${!isOn(e)?'':`${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||'<span class="tag warn">없음</span>'}<button class="small" style="padding:0 8px;margin-left:2px" title="후원자 연결" onclick="linkFromKid('${e.id}')">＋</button>`}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">${DB.enfants.length?'찾는 장학생이 없습니다':'아직 장학생이 없습니다. "＋ 새 장학생"으로 시작하세요.'}</td></tr>`}
+ ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td><b>${esc(e.nom)}</b>${!isOn(e)?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${[esc(e.ecole),esc(e.classe)].filter(Boolean).join(' · ')}</td><td onclick="event.stopPropagation()">${!isOn(e)?'':`${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||'<span class="tag warn">없음</span>'}<button class="small" style="padding:0 8px;margin-left:2px" title="후원자 연결·바꾸기" onclick="linkFromKid('${e.id}')">${donsOf(e.id).length?'✏️':'＋'}</button>`}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">${DB.enfants.length?'찾는 장학생이 없습니다':'아직 장학생이 없습니다. "＋ 새 장학생"으로 시작하세요.'}</td></tr>`}
  </tbody></table></div>`;
 }
 function vEnfant(){
@@ -257,7 +257,7 @@ function vEnfant(){
   <div class="vp"><div><div class="k">비전 (장래희망)</div><div class="dream">${esc(lc.projet)||'<span class="muted" style="font-weight:400">—</span>'}</div></div>
    <div><div class="k">기도제목${lc.date?` <span>· ${fmtD(lc.date)} 카드</span>`:''}</div><div class="pray">${esc(lc.priere)||'<span class="muted">—</span>'}</div></div></div>
   <div style="margin-top:10px"><button class="small ${lc.date?'':'primary'}" onclick="editRec('${e.id}',null,'카드')">✏️ 비전·기도제목 ${lc.date?'새로 입력':'입력'}</button>${lc.date?` <button class="small" onclick="editRec('${e.id}','${lc.id}')">지금 것 고치기</button>`:''}</div>
-  <div class="vp" style="grid-template-columns:1fr"><div><div class="k">후원자 <span>(출력물에는 나오지 않음)</span></div><div class="dons">${ds.map(d=>`<span class="dchip" onclick="go('donateur','${d.id}')">${esc(d.nom)} <span class="muted small">${d.lien.debut?syLabel(d.lien.debut).replace('학년도','')+'~':''}</span></span>`).join('')||'<span class="muted small">없음</span>'}<button class="small" onclick="linkFromKid('${e.id}')">＋ 후원자 연결</button></div></div></div>
+  <div class="vp" style="grid-template-columns:1fr"><div><div class="k">후원자 <span>(출력물에는 나오지 않음)</span></div><div class="dons">${ds.map(d=>`<span class="dchip" onclick="go('donateur','${d.id}')">${esc(d.nom)} <span class="muted small">${d.lien.debut?syLabel(d.lien.debut).replace('학년도','')+'~':''}</span></span>`).join('')||'<span class="muted small">없음</span>'}<button class="small" onclick="linkFromKid('${e.id}')">＋ 후원자 연결·바꾸기</button></div></div></div>
  </div>
  <div class="card"><div class="ch"><h2>이야기 기록 <span class="muted small" style="font-weight:400">${R.length}</span></h2><button class="primary small" onclick="editRec('${e.id}')">＋ 기록 추가</button></div>
   ${R.length?`<div class="tl">${R.map(h=>`<div class="ev"><div class="eh"><span class="dt">${fmtD(h.date)}</span><span class="ty ${h.type}">${h.type}</span>${h.type==='진급'&&(h.ecole||h.classe)?`<span class="small">${esc([h.ecole,h.classe].filter(Boolean).join(' · '))}</span>`:''}<span class="acts"><button class="small" onclick="editRec('${e.id}','${h.id}')">수정</button></span></div>
@@ -318,12 +318,15 @@ async function saveRec(eid,hid){
  if(!e.photo){const p=h.fichiers.find(x=>x.dir==='photos');if(p)e.photo=p.f}
  save(`기록 ${hid?'수정':'추가'}: ${e.nom} (${t})`);closeM();render()}
 function delRec(hid){if(!confirm('이 기록을 지울까요? (올린 파일은 폴더에 남습니다)'))return;DB.histoires=DB.histoires.filter(h=>h.id!==hid);save('기록 삭제');closeM();render()}
-function linkFromKid(eid){const e=kid(eid),cur=new Set(donsOf(eid).map(d=>d.id));const L=DB.donateurs.filter(d=>!d.fin&&!cur.has(d.id)).sort(cmpKo);
- modal(`<h3>${esc(e.nom)} — 후원자 연결</h3><div class="field" style="margin-bottom:10px;max-width:240px"><label>후원 시작 학년도</label>${sySelect('l_db',today())}</div>
- <div class="chk">${L.map(d=>`<label><input type="checkbox" value="${d.id}"> ${esc(d.nom)} <span class="muted small">${kidsOf(d.id).length}명</span></label>`).join('')||'<span class="muted">연결할 후원자가 없습니다</span>'}</div>
- <div class="actions"><button style="margin-right:auto" onclick="closeM();editDon()">＋ 새 후원자</button><button onclick="closeM()">취소</button><button class="primary" onclick="saveLinkKid('${eid}')">연결</button></div>`)}
-function saveLinkKid(eid){const db=fv('l_db')||(syOf(today())+'-09-01');const ids=[...document.querySelectorAll('.chk input:checked')].map(x=>x.value);ids.forEach(d=>DB.liens.push({id:nid(DB.liens,'L'),enfant:eid,donateur:d,debut:db,fin:''}));if(ids.length)save(`후원 연결: ${kid(eid).nom} ← ${ids.map(i=>don(i).nom).join(', ')}`);closeM();render()}
-
+function linkFromKid(eid){const e=kid(eid),cur=new Set(donsOf(eid).map(d=>d.id));const L=DB.donateurs.filter(d=>isOn(d)||cur.has(d.id)).sort((a,b)=>cur.has(b.id)-cur.has(a.id)||cmpKo(a,b));
+ modal(`<h3>${esc(e.nom)} — 후원자</h3><p class="small muted" style="margin:-6px 0 10px">체크하면 연결되고, 체크를 풀면 빠집니다. 지금 연결된 후원자가 맨 위에 있습니다.</p>
+ <div class="field" style="margin-bottom:10px;max-width:240px"><label>새로 연결할 때 시작 학년도</label>${sySelect('l_db',today())}</div>
+ <div class="chk">${L.map(d=>`<label><input type="checkbox" value="${d.id}" ${cur.has(d.id)?'checked':''}> ${cur.has(d.id)?'<b>':''}${esc(d.nom)}${cur.has(d.id)?'</b>':''} <span class="muted small">${kidsOf(d.id).length}명</span></label>`).join('')||'<span class="muted">후원자가 없습니다</span>'}</div>
+ <div class="actions"><button style="margin-right:auto" onclick="closeM();editDon()">＋ 새 후원자</button><button onclick="closeM()">취소</button><button class="primary" onclick="saveLinkKid('${eid}')">저장</button></div>`)}
+function saveLinkKid(eid){const db=fv('l_db')||(syOf(today())+'-09-01'),sy=syOf(today());const sel=new Set([...document.querySelectorAll('.chk input:checked')].map(x=>x.value));const cur=donsOf(eid);const add=[],rm=[];
+ cur.forEach(d=>{if(sel.has(d.id))return;const l=DB.liens.find(x=>x.id===d.lien.id);if(syOf(l.debut)>=sy)DB.liens=DB.liens.filter(x=>x!==l);else l.fin=`${sy}-08-31`;rm.push(d.nom)});
+ sel.forEach(id=>{if(cur.some(d=>d.id===id))return;DB.liens.push({id:nid(DB.liens,'L'),enfant:eid,donateur:id,debut:db,fin:''});add.push(don(id).nom)});
+ if(add.length||rm.length)save(`후원자 변경: ${kid(eid).nom}${add.length?' ＋'+add.join(', '):''}${rm.length?' －'+rm.join(', '):''}`);closeM();render();if(rm.length)toast(`뺐습니다: ${rm.join(', ')}`)}
 /* ---------- 후원자 ---------- */
 function vDonateurs(){
  let L=[...DB.donateurs].sort(cmpKo);if(UI.df==='on')L=L.filter(d=>!d.fin);else if(UI.df==='off')L=L.filter(d=>d.fin);
