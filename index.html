@@ -102,10 +102,10 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: OneDrive 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='9 (2026-11-20)';
+const APP_VERSION='10 (2026-11-20)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
-const TYPE_HELP={카드:'아이가 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'아이·가정 소식',메모:'기타 메모'};
+const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
 const CLS=['PS','MS','GS','CP1','CP2','CE1','CE2','CM1','CM2','6ème','5ème','4ème','3ème','2nde','1ère','Tle'];
 const NIV={PS:'유치원(소)',MS:'유치원(중)',GS:'유치원(대)',CP1:'초등 1학년',CP2:'초등 2학년',CE1:'초등 3학년',CE2:'초등 4학년',CM1:'초등 5학년',CM2:'초등 6학년','6ème':'중학교 1학년','5ème':'중학교 2학년','4ème':'중학교 3학년','3ème':'중학교 4학년','2nde':'고등학교 1학년','1ère':'고등학교 2학년','Tle':'고등학교 3학년'};
 const SINCE_WARN=180;
@@ -126,6 +126,9 @@ const cmpNom=(a,b)=>a.nom.localeCompare(b.nom,'fr'),cmpKo=(a,b)=>a.nom.localeCom
 function nivKo(c){if(!c)return '';const k=Object.keys(NIV).find(k=>k.toLowerCase()===String(c).trim().toLowerCase());return k?NIV[k]:''}
 const isImg=f=>/\.(jpe?g|png|gif|webp)$/i.test(f);
 function nid(arr,p){let n=0;arr.forEach(x=>{const k=parseInt(String(x.id).slice(p.length),10);if(k>n)n=k});return p+String(n+1).padStart(3,'0')}
+function syOf(d){if(!d)return '';const y=+d.slice(0,4),m=+d.slice(5,7);return m>=8?y:y-1}
+const syLabel=d=>{const y=syOf(d);return y?`${y}-${y+1}학년도`:''};
+function sySelect(id,val){const cur=syOf(today()),v=syOf(val);let o='';for(let y=cur+1;y>=cur-12;y--)o+=`<option value="${y}-09-01" ${y===v?'selected':''}>${y}-${y+1}학년도</option>`;return `<select id="${id}"><option value="">—</option>${o}</select>`}
 function schoolYear(d=new Date()){const y=d.getMonth()>=7?d.getFullYear():d.getFullYear()-1;return `${y}-${y+1}`}
 
 /* ---------- 자료 ---------- */
@@ -208,7 +211,7 @@ const fileThumbs=fs=>(fs||[]).map(x=>isImg(x.f)?`<img class="fi" data-f="${x.dir
 function go(v,id){UI.view=v;UI.id=id??null;render();window.scrollTo(0,0)}
 function syncLabel(){if(!DIR_OK)return '이 기기: 보기 전용';if(DSTATE==='ok')return (DIRTY?'저장 중…':'✓ 저장됨')+' · '+DIR.name;if(DSTATE==='need')return '폴더 다시 연결 필요';if(DSTATE==='error')return '저장 오류: '+DERR;return '폴더 연결 안 됨'}
 const renderFoot=()=>{const s=$('#syncst');if(s)s.textContent=syncLabel()};
-function renderNav(){const it=[['enfants','👧 아이들'],['donateurs','🤝 후원자'],['envoi','💌 소식 보내기'],['reglages','⚙️ 설정']];const cur={enfant:'enfants',donateur:'donateurs'}[UI.view]||UI.view;
+function renderNav(){const it=[['enfants','👧 장학생'],['donateurs','🤝 후원자'],['envoi','💌 소식 보내기'],['reglages','⚙️ 설정']];const cur={enfant:'enfants',donateur:'donateurs'}[UI.view]||UI.view;
  $('#nav').innerHTML=`<div class="brand">장학생 관리</div>${it.map(([v,l])=>`<a class="${cur===v?'active':''}" onclick="go('${v}')">${l}</a>`).join('')}
  <div class="foot"><div id="syncst" style="color:#eceaf8">${esc(syncLabel())}</div>${DSTATE==='ok'?'':`<button onclick="${DSTATE==='need'?'resumeDir()':'pickDir()'}">📁 ${DSTATE==='need'?'폴더 다시 연결':'OneDrive 폴더 연결'}</button>`}<div style="margin-top:8px">버전 ${APP_VERSION}</div></div>`}
 function banner(){if(DSTATE==='ok')return '';if(DSTATE==='need')return `<div class="banner">OneDrive 폴더 연결을 다시 허락해 주세요. <button class="small primary" onclick="resumeDir()">폴더 다시 연결</button></div>`;return `<div class="banner">OneDrive 폴더가 연결되지 않았습니다. <button class="small primary" onclick="pickDir()">폴더 연결</button></div>`}
@@ -225,24 +228,24 @@ const clsList=()=>`<datalist id="cls">${CLS.map(c=>`<option value="${c}">${NIV[c
 function enfantsF(){const f=UI.f,q=f.q.trim().toLowerCase();return DB.enfants.filter(e=>(f.s==='all'||(f.s==='on')===!e.fin)&&(!q||(e.nom+' '+e.pere+' '+e.mere+' '+e.tel+' '+e.ecole).toLowerCase().includes(q))).sort(cmpNom)}
 function vEnfants(){
  const L=enfantsF(),f=UI.f,on=DB.enfants.filter(e=>!e.fin).length;
- return hd('아이들',`<button class="primary" onclick="editEnfant()">＋ 새 아이</button>`)+
+ return hd('장학생',`<button class="primary" onclick="editEnfant()">＋ 새 장학생</button>`)+
  (OLD_HAS&&!DB.enfants.length?`<div class="banner info">이 폴더에 이전에 쓰던 자료 파일이 있습니다. 필요하면 <b>설정 › 이전 자료 가져오기</b>로 옮겨 올 수 있어요.</div>`:'')+
  `<div class="card"><div class="row"><div class="field"><label>보기</label><select onchange="UI.f.s=this.value;render()">${[['on',`장학 중 (${on})`],['off',`장학 끝남 (${DB.enfants.length-on})`],['all','전체']].map(([v,l])=>`<option value="${v}" ${f.s===v?'selected':''}>${l}</option>`).join('')}</select></div>
  <div class="field" style="flex:1"><label>찾기 (이름·부모·전화·학교)</label><input id="q" value="${esc(f.q)}" oninput="UI.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{render();const i=$('#q');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)"></div></div></div>
  <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th>생년월일</th><th>나이</th><th>성별</th><th>학교 · 학년</th><th class="hide-m">후원자</th></tr></thead><tbody>
- ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td><b>${esc(e.nom)}</b>${e.fin?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${esc(e.ecole)}${e.classe?` · ${esc(e.classe)}`:''}</td><td class="hide-m">${e.fin?'':n?`${n}명`:'<span class="tag warn">없음</span>'}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">${DB.enfants.length?'찾는 아이가 없습니다':'아직 아이가 없습니다. "＋ 새 아이"로 시작하세요.'}</td></tr>`}
+ ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td><b>${esc(e.nom)}</b>${e.fin?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${esc(e.ecole)}${e.classe?` · ${esc(e.classe)}`:''}</td><td class="hide-m">${e.fin?'':n?`${n}명`:'<span class="tag warn">없음</span>'}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">${DB.enfants.length?'찾는 장학생이 없습니다':'아직 장학생이 없습니다. "＋ 새 장학생"으로 시작하세요.'}</td></tr>`}
  </tbody></table></div>`;
 }
 function vEnfant(){
  const e=kid(UI.id);if(!e)return '<p>찾을 수 없습니다.</p>';
  const L=enfantsF(),i=L.findIndex(x=>x.id===e.id),prev=L[i-1],next=L[i+1];const lc=lastCard(e.id),ds=donsOf(e.id),R=recs(e.id);
  const kv=(k,v,c='')=>`<div class="${c}"><div class="k">${k}</div><div>${v||'<span class="muted">—</span>'}</div></div>`;
- return `<div class="hd"><div class="hp"><button onclick="go('enfants')">← 아이들</button><button ${prev?'':'disabled'} onclick="go('enfant','${prev?.id||''}')">◀</button><button ${next?'':'disabled'} onclick="go('enfant','${next?.id||''}')">▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
+ return `<div class="hd"><div class="hp"><button onclick="go('enfants')">← 장학생</button><button ${prev?'':'disabled'} onclick="go('enfant','${prev?.id||''}')">◀</button><button ${next?'':'disabled'} onclick="go('enfant','${next?.id||''}')">▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
  <div class="hp"><button onclick="printEnfant('${e.id}')">🖨 출력</button><button onclick="editEnfant('${e.id}')">✏️ 정보 수정</button></div></div>
  <div class="card"><div class="prof">
   <label style="cursor:pointer" title="대표 사진 바꾸기">${imgTag(e,'pphoto')}<input type="file" accept="image/*" hidden onchange="newPhoto('${e.id}',this.files)"></label>
   <div class="pinfo">
-   <div class="ch" style="margin:0"><h1 style="font-size:25px">${esc(e.nom)}</h1>${e.fin?`<span class="tag">장학 끝남 ${fmtD(e.fin)}</span>`:`<span class="tag ok">장학 중${e.debut?' · '+fmtD(e.debut)+'부터':''}</span>`}</div>
+   <div class="ch" style="margin:0"><h1 style="font-size:25px">${esc(e.nom)}</h1>${e.fin?`<span class="tag">장학 끝남 ${fmtD(e.fin)}</span>`:`<span class="tag ok">장학 중${e.debut?' · '+syLabel(e.debut)+'부터':''}</span>`}</div>
    <div class="pgrid">
     ${kv('생년월일',e.naissance?`${fmtD(e.naissance)} (만 ${age(e.naissance)}세)`:'')}${kv('성별',e.sexe==='F'?'여':e.sexe==='M'?'남':'')}${kv('학교 · 학년',[esc(e.ecole),e.classe?`<b>${esc(e.classe)}</b>${nivKo(e.classe)?' · '+nivKo(e.classe):''}`:''].filter(Boolean).join(' · '))}
     ${kv('아버지 / 보호자',esc(e.pere))}${kv('어머니 / 보호자',esc(e.mere))}${kv('연락처',esc(e.tel))}
@@ -262,8 +265,8 @@ function vEnfant(){
 }
 async function newPhoto(eid,files){if(!files?.length||!needDir())return;const e=kid(eid);const fs=await storeFiles(eid,[files[0]]);e.photo=fs[0].f;DB.histoires.push({id:nid(DB.histoires,'H'),enfant:eid,date:today(),type:'사진',texte:'',fichiers:fs});save(`대표 사진: ${e.nom}`);render()}
 function editEnfant(id){
- const e=id?kid(id):{nom:'',sexe:'',naissance:'',ecole:'',classe:'',pere:'',mere:'',tel:'',memo:'',debut:today(),fin:''};
- modal(`<h3>${id?'정보 수정':'새 아이'}</h3><div class="form-grid">
+ const e=id?kid(id):{nom:'',sexe:'',naissance:'',ecole:'',classe:'',pere:'',mere:'',tel:'',memo:'',debut:syOf(today())+'-09-01',fin:''};
+ modal(`<h3>${id?'정보 수정':'새 장학생'}</h3><div class="form-grid">
  <div class="field full"><label>이름 (프랑스어, 성 이름)</label><input id="f_nom" value="${esc(e.nom)}"></div>
  <div class="field"><label>생년월일</label><input id="f_nai" type="date" value="${esc(e.naissance)}"></div>
  <div class="field"><label>성별</label><select id="f_sx"><option value=""></option><option value="M" ${e.sexe==='M'?'selected':''}>남</option><option value="F" ${e.sexe==='F'?'selected':''}>여</option></select></div>
@@ -274,7 +277,7 @@ function editEnfant(id){
  <div class="field"><label>아버지 / 보호자</label><input id="f_pe" value="${esc(e.pere)}"></div>
  <div class="field"><label>어머니 / 보호자</label><input id="f_me" value="${esc(e.mere)}"></div>
  <div class="field"></div>
- <div class="field"><label>장학 시작일</label><input id="f_db" type="date" value="${esc(e.debut)}"></div>
+ <div class="field"><label>장학 시작 학년도</label>${sySelect('f_db',e.debut)}</div>
  <div class="field"><label>장학 끝난 날 (계속이면 비움)</label><input id="f_fn" type="date" value="${esc(e.fin)}"></div>
  ${id?'':`<div class="field full"><label>비전 (장래희망)</label><input id="f_pj"></div><div class="field full"><label>기도제목</label><textarea id="f_pr" style="min-height:60px"></textarea></div>`}
  <div class="field full"><label>메모</label><textarea id="f_memo" style="min-height:60px">${esc(e.memo)}</textarea></div></div>
@@ -284,8 +287,8 @@ function saveEnfant(id){const nom=fv('f_nom');if(!nom){alert('이름을 입력�
  Object.assign(e,{nom,naissance:fv('f_nai'),sexe:fv('f_sx'),tel:fv('f_tel'),ecole:fv('f_ec'),classe:fv('f_cl'),pere:fv('f_pe'),mere:fv('f_me'),debut:fv('f_db'),fin:fv('f_fn'),memo:fv('f_memo')});
  if(id&&wasOn&&e.fin){const ls=DB.liens.filter(l=>l.enfant===e.id&&!l.fin);if(ls.length&&confirm(`장학이 끝났습니다. 후원자 연결 ${ls.length}건도 ${fmtD(e.fin)}에 끝난 것으로 할까요?`))ls.forEach(l=>l.fin=e.fin)}
  if(!id&&(fv('f_pj')||fv('f_pr')))DB.histoires.push({id:nid(DB.histoires,'H'),enfant:e.id,date:today(),type:'카드',texte:'',projet:fv('f_pj'),priere:fv('f_pr'),fichiers:[]});
- save((id?'정보 수정: ':'새 아이: ')+nom);closeM();go('enfant',e.id)}
-function delEnfant(id){const e=kid(id);if(!confirm(`${e.nom}의 모든 자료(기록·연결)를 지울까요?\n장학이 끝난 아이는 지우지 말고 "장학 끝난 날"만 적는 것을 권합니다.`))return;DB.enfants=DB.enfants.filter(x=>x.id!==id);DB.histoires=DB.histoires.filter(h=>h.enfant!==id);DB.liens=DB.liens.filter(l=>l.enfant!==id);save('아이 삭제: '+e.nom);closeM();go('enfants')}
+ save((id?'정보 수정: ':'새 장학생: ')+nom);closeM();go('enfant',e.id)}
+function delEnfant(id){const e=kid(id);if(!confirm(`${e.nom}의 모든 자료(기록·연결)를 지울까요?\n장학이 끝난 장학생은 지우지 말고 "장학 끝난 날"만 적는 것을 권합니다.`))return;DB.enfants=DB.enfants.filter(x=>x.id!==id);DB.histoires=DB.histoires.filter(h=>h.enfant!==id);DB.liens=DB.liens.filter(l=>l.enfant!==id);save('장학생 삭제: '+e.nom);closeM();go('enfants')}
 function editRec(eid,hid,type){
  const e=kid(eid),h=hid?DB.histoires.find(x=>x.id===hid):{date:today(),type:type||'카드',texte:'',projet:'',priere:'',ecole:e.ecole,classe:e.classe,fichiers:[]};
  modal(`<h3>${esc(e.nom)} — ${hid?'기록 수정':'기록 추가'}</h3><div class="form-grid">
@@ -324,7 +327,7 @@ function vDonateurs(){
  let L=[...DB.donateurs].sort(cmpKo);if(UI.df==='on')L=L.filter(d=>!d.fin);else if(UI.df==='off')L=L.filter(d=>d.fin);
  return hd('후원자',`<button class="primary" onclick="editDon()">＋ 새 후원자</button>`)+
  `<div class="card"><div class="row"><div class="field"><label>보기</label><select onchange="UI.df=this.value;render()">${[['on','후원 중'],['off','후원 끝남'],['all','전체']].map(([v,l])=>`<option value="${v}" ${UI.df===v?'selected':''}>${l}</option>`).join('')}</select></div></div></div>
- <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th class="hide-m">구분</th><th>후원하는 아이</th><th>마지막 소식</th></tr></thead><tbody>
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th class="hide-m">구분</th><th>후원 장학생</th><th>마지막 소식</th></tr></thead><tbody>
  ${L.map(d=>{const k=kidsOf(d.id),s=lastSent(d.id),ds=daysSince(s);return `<tr class="click" onclick="go('donateur','${d.id}')"><td><b>${esc(d.nom)}</b>${d.fin?' <span class="tag">끝남</span>':''}</td><td class="hide-m">${esc(d.type)}</td><td>${k.length?`<b>${k.length}명</b> <span class="muted small">${esc(k.map(x=>x.nom).join(', '))}</span>`:'<span class="muted">—</span>'}</td><td>${s?`<span class="tag ${ds>SINCE_WARN?'warn':'ok'}">${fmtD(s)}</span>`:k.length?'<span class="tag warn">보낸 적 없음</span>':''}</td></tr>`}).join('')||'<tr><td colspan="4" class="empty">후원자가 없습니다</td></tr>'}
  </tbody></table></div>`}
 function vDonateur(){
@@ -334,16 +337,16 @@ function vDonateur(){
  return `<div class="hd"><div class="hp"><button onclick="go('donateurs')">← 후원자</button></div><div class="hp">${k.length?`<button class="primary" onclick="UI.cd={don:'${d.id}',ids:null};go('envoi')">💌 감사카드 만들기</button>`:''}<button onclick="editDon('${d.id}')">✏️ 정보 수정</button></div></div>
  <div class="card"><div class="ch" style="margin:0"><h1 style="font-size:24px">${esc(d.nom)}</h1>${d.fin?`<span class="tag">후원 끝남 ${fmtD(d.fin)}</span>`:'<span class="tag ok">후원 중</span>'}</div>
   <div class="pgrid">${kv('구분',esc(d.type))}${kv('후원 방식',[esc(d.cycle),d.montant?d.montant.toLocaleString('ko-KR')+' '+esc(d.devise):''].filter(Boolean).join(' · '))}${kv('연락처',esc(d.contact))}${d.memo?kv('메모',esc(d.memo),'w3'):''}</div></div>
- <div class="card"><div class="ch"><h2>후원하는 아이 <span class="muted small" style="font-weight:400">${k.length}명</span></h2><button class="small primary" onclick="linkFromDon('${d.id}')">＋ 아이 연결</button></div>
-  <div class="kids">${k.map(e=>`<div class="kid">${imgTag(e,'kim')}<div style="min-width:0;flex:1"><a class="lk" onclick="go('enfant','${e.id}')"><b>${esc(e.nom)}</b></a><div class="small muted">${esc(e.ecole)} ${esc(e.classe)}</div><div class="small muted">${e.lien.debut?fmtD(e.lien.debut)+'부터':''}</div></div><button class="small" title="후원 끝내기" onclick="endLink('${e.lien.id}')">끝내기</button></div>`).join('')||'<div class="muted">지금 후원하는 아이가 없습니다</div>'}</div>
+ <div class="card"><div class="ch"><h2>후원 장학생 <span class="muted small" style="font-weight:400">${k.length}명</span></h2><button class="small primary" onclick="linkFromDon('${d.id}')">＋ 장학생 연결</button></div>
+  <div class="kids">${k.map(e=>`<div class="kid">${imgTag(e,'kim')}<div style="min-width:0;flex:1"><a class="lk" onclick="go('enfant','${e.id}')"><b>${esc(e.nom)}</b></a><div class="small muted">${esc(e.ecole)} ${esc(e.classe)}</div><div class="small muted">${e.lien.debut?fmtD(e.lien.debut)+'부터':''}</div></div><button class="small" title="후원 끝내기" onclick="endLink('${e.lien.id}')">끝내기</button></div>`).join('')||'<div class="muted">지금 후원하는 장학생이 없습니다</div>'}</div>
   ${past.length?`<details style="margin-top:12px"><summary class="small" style="cursor:pointer;color:var(--accent)">지난 후원 (${past.length})</summary><div class="small" style="margin-top:6px">${past.map(l=>`<div>${esc(kid(l.enfant)?.nom||'')} · ${fmtD(l.debut)} ~ ${fmtD(l.fin)}</div>`).join('')}</div></details>`:''}
  </div>
  <div class="card"><div class="ch"><h2>보낸 소식 <span class="muted small" style="font-weight:400">${E.length}</span></h2><button class="small" onclick="addEnvoi('${d.id}')">＋ 보낸 기록 추가</button></div>
   ${E.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b>${fmtD(x.date)}</b> <span class="small">${esc(x.note||'감사카드')}</span> <span class="muted small">${esc((x.enfants||[]).map(i=>kid(i)?.nom).filter(Boolean).join(', '))}</span> <button class="small" style="float:right" onclick="delEnvoi('${x.id}')">×</button></div>`).join('')||'<div class="muted small">아직 보낸 기록이 없습니다</div>'}
  </div>`}
 function linkFromDon(did){const d=don(did),cur=new Set(kidsOf(did).map(e=>e.id));const L=DB.enfants.filter(e=>!e.fin&&!cur.has(e.id)).sort((a,b)=>donsOf(a.id).length-donsOf(b.id).length||cmpNom(a,b));
- modal(`<h3>${esc(d.nom)} — 아이 연결</h3><div class="field" style="margin-bottom:10px"><label>후원 시작일</label><input id="l_db" type="date" value="${today()}" style="width:180px"></div><p class="small muted" style="margin:0 0 6px">괄호는 이미 연결된 후원자 수 (적은 순)</p>
- <div class="chk">${L.map(e=>`<label><input type="checkbox" value="${e.id}"> ${esc(e.nom)} <span class="muted small">(${donsOf(e.id).length})</span></label>`).join('')||'<span class="muted">연결할 아이가 없습니다</span>'}</div>
+ modal(`<h3>${esc(d.nom)} — 장학생 연결</h3><div class="field" style="margin-bottom:10px"><label>후원 시작일</label><input id="l_db" type="date" value="${today()}" style="width:180px"></div><p class="small muted" style="margin:0 0 6px">괄호는 이미 연결된 후원자 수 (적은 순)</p>
+ <div class="chk">${L.map(e=>`<label><input type="checkbox" value="${e.id}"> ${esc(e.nom)} <span class="muted small">(${donsOf(e.id).length})</span></label>`).join('')||'<span class="muted">연결할 장학생이 없습니다</span>'}</div>
  <div class="actions"><button onclick="closeM()">취소</button><button class="primary" onclick="saveLinkDon('${did}')">연결</button></div>`)}
 function saveLinkDon(did){const db=fv('l_db')||today();const ids=[...document.querySelectorAll('.chk input:checked')].map(x=>x.value);ids.forEach(e=>DB.liens.push({id:nid(DB.liens,'L'),enfant:e,donateur:did,debut:db,fin:''}));if(ids.length)save(`후원 연결: ${don(did).nom} → ${ids.map(i=>kid(i).nom).join(', ')}`);closeM();render()}
 function endLink(lid){const l=DB.liens.find(x=>x.id===lid);modal(`<h3>후원 끝내기</h3><p>${esc(don(l.donateur).nom)} → ${esc(kid(l.enfant).nom)}</p><div class="field"><label>끝난 날</label><input id="l_fn" type="date" value="${today()}" style="width:180px"></div><p class="small muted">기록은 "지난 후원"에 남습니다.</p><div class="actions"><button class="danger" style="margin-right:auto" onclick="if(confirm('연결 기록 자체를 지울까요? (잘못 연결한 경우)')){DB.liens=DB.liens.filter(x=>x.id!=='${lid}');save('연결 삭제');closeM();render()}">잘못 연결함 (지우기)</button><button onclick="closeM()">취소</button><button class="primary" onclick="DB.liens.find(x=>x.id==='${lid}').fin=fv('l_fn')||today();save('후원 끝남');closeM();render()">끝내기</button></div>`)}
@@ -363,7 +366,7 @@ function editDon(id){const d=id?don(id):{nom:'',type:'개인',contact:'',cycle:'
  <div class="actions">${id?`<button class="danger" style="margin-right:auto" onclick="delDon('${id}')">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveDon('${id||''}')">저장</button></div>`)}
 function saveDon(id){const nom=fv('d_nom');if(!nom){alert('이름을 입력해 주세요');return}let d=id?don(id):null;if(!d){d={id:nid(DB.donateurs,'D')};DB.donateurs.push(d)}const wasOn=!d.fin;
  Object.assign(d,{nom,type:fv('d_ty'),contact:fv('d_ct'),cycle:fv('d_cy'),montant:fv('d_mt')?Number(fv('d_mt')):null,devise:fv('d_dv'),fin:fv('d_fn'),memo:fv('d_memo')});
- if(id&&wasOn&&d.fin){const ls=DB.liens.filter(l=>l.donateur===d.id&&!l.fin);if(ls.length&&confirm(`후원이 끝났습니다. 아이 연결 ${ls.length}건도 ${fmtD(d.fin)}에 끝난 것으로 할까요?`))ls.forEach(l=>l.fin=d.fin)}
+ if(id&&wasOn&&d.fin){const ls=DB.liens.filter(l=>l.donateur===d.id&&!l.fin);if(ls.length&&confirm(`후원이 끝났습니다. 장학생 연결 ${ls.length}건도 ${fmtD(d.fin)}에 끝난 것으로 할까요?`))ls.forEach(l=>l.fin=d.fin)}
  save((id?'후원자 수정: ':'새 후원자: ')+nom);closeM();if(!id&&UI.view==='enfant')render();else go('donateur',d.id)}
 function delDon(id){const d=don(id);if(!confirm(`${d.nom}의 모든 자료(연결·보낸 기록)를 지울까요?\n후원이 끝난 경우에는 "후원 끝난 날"만 적는 것을 권합니다.`))return;DB.donateurs=DB.donateurs.filter(x=>x.id!==id);DB.liens=DB.liens.filter(l=>l.donateur!==id);DB.envois=DB.envois.filter(x=>x.donateur!==id);save('후원자 삭제: '+d.nom);closeM();go('donateurs')}
 
@@ -378,7 +381,7 @@ function vEnvoi(){
  <div class="card"><div class="row"><div class="field"><label>후원자</label><select onchange="UI.cd={don:this.value,ids:null};render()"><option value="">— 후원자를 고르세요 —</option>${D.map(x=>`<option value="${x.id}" ${UI.cd.don===x.id?'selected':''}>${esc(x.nom)} (${kidsOf(x.id).length}명)${lastSent(x.id)?' · '+fmtD(lastSent(x.id)):''}</option>`).join('')}</select></div>
   <div class="field" style="flex:1"><label>인사말</label><input value="${esc(DB.settings.cardTitle)}" onchange="DB.settings.cardTitle=this.value;save();render()"></div>
   <div class="field" style="flex:1"><label>아래 문구</label><input value="${esc(DB.settings.cardFooter)}" onchange="DB.settings.cardFooter=this.value;save();render()"></div></div>
-  ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ 사진이나 기도제목이 없는 아이: ${miss.map(e=>`<a class="lk" onclick="go('enfant','${e.id}')">${esc(e.nom)}</a>`).join(', ')}</div>`:''}
+  ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ 사진이나 기도제목이 없는 장학생: ${miss.map(e=>`<a class="lk" onclick="go('enfant','${e.id}')">${esc(e.nom)}</a>`).join(', ')}</div>`:''}
   ${L.length?`<div class="row" style="margin-top:12px"><button class="primary" onclick="allPNG()">🖼 카드 ${L.length}장 이미지로 저장</button><button onclick="printCards()">🖨 인쇄</button>${d?`<button onclick="recEnvoi('${d.id}',today(),'감사카드')">✓ 보냄으로 기록</button>${lastSent(d.id)?`<span class="small muted">마지막: ${fmtD(lastSent(d.id))}</span>`:''}`:''}</div>`:''}
  </div><div class="cards-pv" id="cpv"></div>`}
 async function drawPreviews(){const box=$('#cpv');if(!box)return;for(const e of cardList()){if(!$('#cpv'))return;const c=await cardCanvas(e);const w=document.createElement('div');w.className='pv';w.appendChild(c);const r=document.createElement('div');r.className='ch';r.style.margin='8px 2px 0';r.innerHTML=`<a class="lk small" onclick="go('enfant','${e.id}')"><b>${esc(e.nom)}</b></a><button class="small" onclick="cardPNG('${e.id}')">이미지 저장</button>`;w.appendChild(r);box.appendChild(w)}}
@@ -420,24 +423,24 @@ function ficheHTML(e){return `<div class="fiche"><div class="ti">Fiche de l'él�
  <div class="l"><b>Nom du père ou du tuteur :</b><span class="d"></span></div><div class="l"><b>Nom de la mère ou de la tutrice :</b><span class="d"></span></div><div class="l"><b>Téléphone(s) :</b><span class="d"></span></div>
  <div class="l" style="margin-top:3mm"><b>Mon projet d'avenir (le métier que je veux faire) :</b></div><div class="dl"></div><div class="dl"></div>
  <div class="l" style="margin-top:3mm"><b>Mes sujets de prière :</b></div><div class="dl"></div><div class="dl"></div><div class="dl"></div></div>`}
-function printFiches(){const L=DB.enfants.filter(e=>!e.fin).sort(cmpNom);if(!L.length){alert('장학 중인 아이가 없습니다');return}let h='';for(let i=0;i<L.length;i+=2)h+=`<div class="pgb">${ficheHTML(L[i])}${L[i+1]?`<div class="cut">✂ découper ici</div>${ficheHTML(L[i+1])}`:''}</div>`;printHTML(h)}
+function printFiches(){const L=DB.enfants.filter(e=>!e.fin).sort(cmpNom);if(!L.length){alert('장학 중인 장학생이 없습니다');return}let h='';for(let i=0;i<L.length;i+=2)h+=`<div class="pgb">${ficheHTML(L[i])}${L[i+1]?`<div class="cut">✂ découper ici</div>${ficheHTML(L[i+1])}`:''}</div>`;printHTML(h)}
 
 /* ---------- 설정 ---------- */
 function vReglages(){
- return hd('설정')+`<div class="card"><h2 style="margin-bottom:8px">출력·내보내기</h2><div class="row"><button onclick="printFiches()">🖨 아이들 카드 양식 (프랑스어, 장학 중 ${DB.enfants.filter(e=>!e.fin).length}명)</button><button onclick="exportCSV()">아이들 명단 엑셀로 내보내기</button></div>
- <p class="small muted" style="margin-bottom:0">카드 양식에는 이름·학교·학년·생년월일이 미리 채워지고, 비전·기도제목은 아이들이 직접 씁니다. 받은 카드는 아이 페이지에 "카드" 기록으로 올리세요.</p></div>
+ return hd('설정')+`<div class="card"><h2 style="margin-bottom:8px">출력·내보내기</h2><div class="row"><button onclick="printFiches()">🖨 장학생 카드 양식 (프랑스어, 장학 중 ${DB.enfants.filter(e=>!e.fin).length}명)</button><button onclick="exportCSV()">장학생 명단 엑셀로 내보내기</button></div>
+ <p class="small muted" style="margin-bottom:0">카드 양식에는 이름·학교·학년·생년월일이 미리 채워지고, 비전·기도제목은 장학생이 직접 씁니다. 받은 카드는 장학생 페이지에 "카드" 기록으로 올리세요.</p></div>
  <div class="card"><h2 style="margin-bottom:8px">저장 폴더 · 백업</h2><p>${DSTATE==='ok'?`연결됨: <b>${esc(DIR.name)}</b> — 자료 파일 ${DATAFILE}, photos(사진), fiches(문서), cartes(감사카드), sauvegardes(1주일마다 자동 백업, 30개 보관)`:'연결되지 않음'}</p>
  <div class="row"><button onclick="pickDir()">📁 폴더 다시 선택</button>${DSTATE==='ok'?'<button onclick="autoBackup(true)">지금 백업</button>':''}<button onclick="download('jangak_sauvegarde_'+today()+'.json',JSON.stringify(DB),'application/json')">백업 파일 내려받기</button><label class="btn">백업에서 복원<input type="file" accept=".json" hidden onchange="restoreBackup(this.files[0])"></label></div></div>
- <div class="card"><h2 style="margin-bottom:8px">이전 자료 가져오기</h2><p class="small">이 폴더에 있는 예전 자료 파일(${OLDFILE})의 아이·후원자·연결·카드 내용·사진을 이 프로그램 형식으로 옮겨 옵니다. 예전 파일은 그대로 남습니다.</p>
+ <div class="card"><h2 style="margin-bottom:8px">이전 자료 가져오기</h2><p class="small">이 폴더에 있는 예전 자료 파일(${OLDFILE})의 장학생·후원자·연결·카드 내용·사진을 이 프로그램 형식으로 옮겨 옵니다. 예전 파일은 그대로 남습니다.</p>
  <button ${OLD_HAS?'':'disabled'} onclick="importOld()">이전 자료 가져오기</button>${OLD_HAS?'':' <span class="small muted">이 폴더에는 예전 자료 파일이 없습니다</span>'}</div>
  <div class="card"><h2 style="margin-bottom:8px">최근 변경 기록</h2><div class="small" style="max-height:260px;overflow:auto">${[...DB.journal].reverse().slice(0,100).map(j=>`<div>${fmtD(j.at)} ${j.at.slice(11,16)} — ${esc(j.msg)}</div>`).join('')||'<span class="muted">없음</span>'}</div></div>`}
-function exportCSV(){const rows=[['이름','생년월일','성별','학교','학년','아버지/보호자','어머니/보호자','연락처','비전','기도제목','후원자','장학 끝난 날']];[...DB.enfants].sort(cmpNom).forEach(e=>{const lc=lastCard(e.id);rows.push([e.nom,e.naissance,e.sexe,e.ecole,e.classe,e.pere,e.mere,e.tel,lc.projet||'',lc.priere||'',donsOf(e.id).map(d=>d.nom).join(', '),e.fin])});download(`아이들_${today()}.csv`,'﻿'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'),'text/csv')}
-function restoreBackup(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.meta?.app!=='jangak')throw 0;if(!confirm(`이 백업(아이 ${d.enfants.length}명)으로 바꿀까요?`))return;const old=DB?.meta?.rev||0;DB=norm(d);DB.meta.rev=Math.max(old,DB.meta.rev||0);save('백업에서 복원');render();toast('복원했습니다')}catch(e){alert('이 프로그램의 백업 파일이 아닙니다.')}};r.readAsText(file)}
+function exportCSV(){const rows=[['이름','생년월일','성별','학교','학년','아버지/보호자','어머니/보호자','연락처','비전','기도제목','후원자','장학 끝난 날']];[...DB.enfants].sort(cmpNom).forEach(e=>{const lc=lastCard(e.id);rows.push([e.nom,e.naissance,e.sexe,e.ecole,e.classe,e.pere,e.mere,e.tel,lc.projet||'',lc.priere||'',donsOf(e.id).map(d=>d.nom).join(', '),e.fin])});download(`장학생_${today()}.csv`,'﻿'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'),'text/csv')}
+function restoreBackup(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.meta?.app!=='jangak')throw 0;if(!confirm(`이 백업(장학생 ${d.enfants.length}명)으로 바꿀까요?`))return;const old=DB?.meta?.rev||0;DB=norm(d);DB.meta.rev=Math.max(old,DB.meta.rev||0);save('백업에서 복원');render();toast('복원했습니다')}catch(e){alert('이 프로그램의 백업 파일이 아닙니다.')}};r.readAsText(file)}
 
 /* 예전 형식(학년도별 표)을 새 형식으로 */
 async function importOld(){
  let o;try{o=JSON.parse(await (await (await DIR.getFileHandle(OLDFILE)).getFile()).text())}catch(e){alert('예전 자료 파일을 읽을 수 없습니다.');return}
- if((DB.enfants.length||DB.donateurs.length)&&!confirm('지금 자료에 이전 자료를 더합니다. 같은 이름의 아이·후원자는 건너뜁니다. 계속할까요?'))return;
+ if((DB.enfants.length||DB.donateurs.length)&&!confirm('지금 자료에 이전 자료를 더합니다. 같은 이름의 장학생·후원자는 건너뜁니다. 계속할까요?'))return;
  const fmt=o.meta?.format||1,cur=o.settings?.annee;const ymap={};
  const yrs=e=>{if(fmt>=2)return e.ans||{};const r={};const ys=new Set([...Object.keys(e.statut||{}),...Object.keys(e.annees||{})]);ys.forEach(y=>{r[y]=Object.assign({st:{장학중:'장학생'}[(e.statut||{})[y]]||(e.statut||{})[y]||'',ecole:e.ecole||''},(e.annees||{})[y]||{})});return r};
  const yStart=y=>y.slice(0,4)+'-10-01',yEnd=y=>(+y.slice(0,4)+1)+'-07-31';
@@ -459,7 +462,7 @@ async function importOld(){
  const pairs={};(o.liens||o.matches||[]).forEach(l=>{const k=l.eleve+'|'+l.donateur;(pairs[k]=pairs[k]||[]).push(l.annee)});
  Object.entries(pairs).forEach(([k,ys])=>{const [e,d]=k.split('|');if(!ymap[e]||!dmap[d])return;ys.sort();DB.liens.push({id:nid(DB.liens,'L'),enfant:ymap[e],donateur:dmap[d],debut:ys[0].slice(0,4)+'-09-01',fin:ys.at(-1)===cur?'':yEnd(ys.at(-1))});nL++});
  Object.values(dmap).forEach(id=>{const d=don(id);if(!d.fin&&!liensOn().some(l=>l.donateur===id)){const ends=DB.liens.filter(l=>l.donateur===id).map(l=>l.fin).sort();d.fin=ends.at(-1)||today()}});
- save(`이전 자료 가져옴: 아이 ${nE}, 후원자 ${nD}, 연결 ${nL}, 기록 ${nH}`);render();alert(`가져왔습니다.\n아이 ${nE}명 · 후원자 ${nD}명 · 후원 연결 ${nL}건 · 기록 ${nH}건`)}
+ save(`이전 자료 가져옴: 장학생 ${nE}, 후원자 ${nD}, 연결 ${nL}, 기록 ${nH}`);render();alert(`가져왔습니다.\n장학생 ${nE}명 · 후원자 ${nD}명 · 후원 연결 ${nL}건 · 기록 ${nH}건`)}
 
 /* ---------- 시작 ---------- */
 (async()=>{
