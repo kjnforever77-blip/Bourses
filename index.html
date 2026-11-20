@@ -102,7 +102,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: OneDrive 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='8 (2026-11-20)';
+const APP_VERSION='9 (2026-11-20)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'아이가 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'아이·가정 소식',메모:'기타 메모'};
@@ -251,7 +251,7 @@ function vEnfant(){
   </div></div>
   <div class="vp"><div><div class="k">비전 (장래희망)</div><div class="dream">${esc(lc.projet)||'<span class="muted" style="font-weight:400">—</span>'}</div></div>
    <div><div class="k">기도제목${lc.date?` <span>· ${fmtD(lc.date)} 카드</span>`:''}</div><div class="pray">${esc(lc.priere)||'<span class="muted">—</span>'}</div></div></div>
-  ${lc.date?'':`<div style="margin-top:10px"><button class="small primary" onclick="editRec('${e.id}',null,'카드')">＋ 비전·기도제목 카드 기록</button></div>`}
+  <div style="margin-top:10px"><button class="small ${lc.date?'':'primary'}" onclick="editRec('${e.id}',null,'카드')">✏️ 비전·기도제목 ${lc.date?'새로 입력':'입력'}</button>${lc.date?` <button class="small" onclick="editRec('${e.id}','${lc.id}')">지금 것 고치기</button>`:''}</div>
   <div class="vp" style="grid-template-columns:1fr"><div><div class="k">후원자 <span>(출력물에는 나오지 않음)</span></div><div class="dons">${ds.map(d=>`<span class="dchip" onclick="go('donateur','${d.id}')">${esc(d.nom)} <span class="muted small">${d.lien.debut?fmtD(d.lien.debut)+'~':''}</span></span>`).join('')||'<span class="muted small">없음</span>'}<button class="small" onclick="linkFromKid('${e.id}')">＋ 후원자 연결</button></div></div></div>
  </div>
  <div class="card"><div class="ch"><h2>이야기 기록 <span class="muted small" style="font-weight:400">${R.length}</span></h2><button class="primary small" onclick="editRec('${e.id}')">＋ 기록 추가</button></div>
@@ -276,12 +276,14 @@ function editEnfant(id){
  <div class="field"></div>
  <div class="field"><label>장학 시작일</label><input id="f_db" type="date" value="${esc(e.debut)}"></div>
  <div class="field"><label>장학 끝난 날 (계속이면 비움)</label><input id="f_fn" type="date" value="${esc(e.fin)}"></div>
+ ${id?'':`<div class="field full"><label>비전 (장래희망)</label><input id="f_pj"></div><div class="field full"><label>기도제목</label><textarea id="f_pr" style="min-height:60px"></textarea></div>`}
  <div class="field full"><label>메모</label><textarea id="f_memo" style="min-height:60px">${esc(e.memo)}</textarea></div></div>
  <div class="actions">${id?`<button class="danger" style="margin-right:auto" onclick="delEnfant('${id}')">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveEnfant('${id||''}')">저장</button></div>`)}
 function saveEnfant(id){const nom=fv('f_nom');if(!nom){alert('이름을 입력해 주세요');return}
  let e=id?kid(id):null;if(!e){e={id:nid(DB.enfants,'E'),photo:''};DB.enfants.push(e)}const wasOn=!e.fin;
  Object.assign(e,{nom,naissance:fv('f_nai'),sexe:fv('f_sx'),tel:fv('f_tel'),ecole:fv('f_ec'),classe:fv('f_cl'),pere:fv('f_pe'),mere:fv('f_me'),debut:fv('f_db'),fin:fv('f_fn'),memo:fv('f_memo')});
  if(id&&wasOn&&e.fin){const ls=DB.liens.filter(l=>l.enfant===e.id&&!l.fin);if(ls.length&&confirm(`장학이 끝났습니다. 후원자 연결 ${ls.length}건도 ${fmtD(e.fin)}에 끝난 것으로 할까요?`))ls.forEach(l=>l.fin=e.fin)}
+ if(!id&&(fv('f_pj')||fv('f_pr')))DB.histoires.push({id:nid(DB.histoires,'H'),enfant:e.id,date:today(),type:'카드',texte:'',projet:fv('f_pj'),priere:fv('f_pr'),fichiers:[]});
  save((id?'정보 수정: ':'새 아이: ')+nom);closeM();go('enfant',e.id)}
 function delEnfant(id){const e=kid(id);if(!confirm(`${e.nom}의 모든 자료(기록·연결)를 지울까요?\n장학이 끝난 아이는 지우지 말고 "장학 끝난 날"만 적는 것을 권합니다.`))return;DB.enfants=DB.enfants.filter(x=>x.id!==id);DB.histoires=DB.histoires.filter(h=>h.enfant!==id);DB.liens=DB.liens.filter(l=>l.enfant!==id);save('아이 삭제: '+e.nom);closeM();go('enfants')}
 function editRec(eid,hid,type){
