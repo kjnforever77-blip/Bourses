@@ -130,7 +130,7 @@ table.data tbody tr.click{cursor:pointer}table.data tbody tr.click:hover td{back
    장학생 관리 — 데이터는 OneDrive 폴더의 bourses_donnees.json
    사진: photos/  카드 스캔: fiches/  자동 백업: sauvegardes/
    ========================================================= */
-const APP_VERSION='4 (2026-11-20)';
+const APP_VERSION='5 (2026-11-20)';
 const DATAFILE='bourses_donnees.json';
 const KEY='bourses_db_v1';
 const ST_E=['장학중','중단','졸업'];
@@ -297,21 +297,21 @@ function vEleves(){
  const L=elevesFiltered();const ecs=[...new Set(DB.eleves.map(e=>e.ecole).filter(Boolean))].sort();
  const stat=(v,l,fn)=>`<div class="stat" onclick="${fn}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
  return hd(`장학생 — ${A()}`,`<button class="primary" onclick="editEleve()">＋ 장학생 추가</button><button onclick="printFiches(elevesFiltered().map(e=>e.id))">🖨 학생 카드 양식 (${L.length}명)</button>`)+
- `<div class="stats">${stat(act.length,'장학중',"UI.f={st:'장학중',ec:'',don:'',q:''};render()")}${stat(noDon,'후원자 없는 학생',"UI.f.st='장학중';setF('don','none')")}${stat(noPh,'사진 없는 학생',"UI.f.st='장학중';setF('don','nophoto')")}${stat(noCard,'장래희망·기도제목 없음',"UI.f.st='장학중';setF('don','nocard')")}</div>
+ `<div class="stats">${stat(act.length,A()+' 장학생',"UI.f={st:'장학중',ec:'',don:'',q:''};render()")}${stat(noDon,'후원자 없는 학생',"UI.f.st='장학중';setF('don','none')")}${stat(noPh,'사진 없는 학생',"UI.f.st='장학중';setF('don','nophoto')")}${stat(noCard,'장래희망·기도제목 없음',"UI.f.st='장학중';setF('don','nocard')")}</div>
  <div class="card"><div class="row">
-  <div class="field"><label>상태 (${A()})</label><select onchange="setF('st',this.value)">${[['장학중','장학중'],['기타','중단·졸업·기록 없음'],['','전체']].map(([v,l])=>`<option value="${v}" ${UI.f.st===v?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="field"><label>명단 (${A()})</label><select onchange="setF('st',this.value)">${[['장학중','올해 장학생'],['기타','올해 명단에 없는 학생'],['','전체']].map(([v,l])=>`<option value="${v}" ${UI.f.st===v?'selected':''}>${l}</option>`).join('')}</select></div>
   <div class="field"><label>학교</label><select onchange="setF('ec',this.value)"><option value="">전체</option>${ecs.map(x=>`<option ${UI.f.ec===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
   <div class="field"><label>보기</label><select onchange="setF('don',this.value)">${[['','전체'],['none','후원자 없는 학생'],['nophoto','사진 없는 학생'],['nocard','장래희망·기도제목 없음']].map(([v,l])=>`<option value="${v}" ${UI.f.don===v?'selected':''}>${l}</option>`).join('')}</select></div>
   <div class="field" style="flex:1"><label>검색 (이름·보호자·전화)</label><input value="${esc(UI.f.q)}" oninput="UI.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{render();const i=document.querySelector('main input[oninput]');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)"></div>
  </div></div>
- <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th></th><th>이름</th><th class="hide-m">성별</th><th class="hide-m">생년월일</th><th>학교 · 학년</th><th>후원자</th><th>상태</th></tr></thead><tbody>
- ${L.map(e=>{const y=yr(e),s=stE(e);return `<tr class="click" onclick="go('eleve','${e.id}')"><td style="width:50px">${imgTag(e,'thumb')}</td><td><b>${esc(e.nom)}</b></td><td class="hide-m">${esc(e.sexe)}</td><td class="hide-m">${fmtD(e.naissance)}${e.naissance?` <span class="muted small">(${age(e.naissance)}세)</span>`:''}</td><td>${[esc(e.ecole),y.classe?`<b>${esc(y.classe)}</b>`:''].filter(Boolean).join(' · ')}</td><td>${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||(s==='장학중'?'<span class="tag warn">없음</span>':'')}</td><td onclick="event.stopPropagation()">${stSel(e)}</td></tr>`}).join('')||'<tr><td colspan="7" class="muted" style="padding:20px">해당하는 학생이 없습니다</td></tr>'}
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th></th><th>이름</th><th class="hide-m">성별</th><th class="hide-m">생년월일</th><th>학교 · 학년</th><th>후원자</th>${UI.f.st==='장학중'?'':'<th>'+A()+'</th>'}</tr></thead><tbody>
+ ${L.map(e=>{const y=yr(e),s=stE(e);return `<tr class="click" onclick="go('eleve','${e.id}')"><td style="width:50px">${imgTag(e,'thumb')}</td><td><b>${esc(e.nom)}</b></td><td class="hide-m">${esc(e.sexe)}</td><td class="hide-m">${fmtD(e.naissance)}${e.naissance?` <span class="muted small">(${age(e.naissance)}세)</span>`:''}</td><td>${[esc(e.ecole),y.classe?`<b>${esc(y.classe)}</b>`:''].filter(Boolean).join(' · ')}</td><td>${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||(s==='장학중'?'<span class="tag warn">없음</span>':'')}</td>${UI.f.st==='장학중'?'':`<td onclick="event.stopPropagation()">${s==='장학중'?'<span class="tag ok">장학생</span>':`<span class="muted small" style="margin-right:6px">${s||'기록 없음'}</span><button class="small primary" onclick="setStE('${e.id}','장학중')">올해 명단에 넣기</button>`}</td>`}</tr>`}).join('')||'<tr><td colspan="8" class="muted" style="padding:20px">해당하는 학생이 없습니다</td></tr>'}
  </tbody></table></div>`;
 }
 
 /* ---------- 학생 상세 ---------- */
 function stSel(e){const s=stE(e);return `<select class="stsel ${s==='장학중'?'ok':s?'bad':''}" onchange="setStE('${e.id}',this.value)" title="${A()} 상태"><option value="">— 없음</option>${ST_E.map(x=>`<option ${s===x?'selected':''}>${x}</option>`).join('')}</select>`}
-function setStE(id,v){const e=elv(id),a=A();if(v)e.statut[a]=v;else delete e.statut[a];save(`상태 변경: ${e.nom} (${a}) → ${v||'없음'}`);render();toast(`${e.nom}: ${a} ${v||'상태 없음'}`)}
+function setStE(id,v){const e=elv(id),a=A();if(v)e.statut[a]=v;else delete e.statut[a];save(`상태 변경: ${e.nom} (${a}) → ${v||'없음'}`);render();toast(v==='장학중'?`${e.nom}: ${a} 명단에 넣었습니다`:`${e.nom}: ${a} ${v||'명단에서 뺌'}`)}
 function vEleve(){
  const e=elv(UI.id);if(!e)return '<p>학생을 찾을 수 없습니다.</p>';
  const L=elevesFiltered();const i=L.findIndex(x=>x.id===e.id);
@@ -326,7 +326,7 @@ function vEleve(){
   <label class="pwrap" title="${a} 사진 올리기">${imgTag(e,'pphoto',ph)}<span class="pov">📷 사진 바꾸기</span><input type="file" accept="image/*" hidden onchange="uploadPhoto('${e.id}','${a}',this.files[0])"></label>
   <div class="pinfo">
    <div class="ptop"><h1>${esc(e.nom)}</h1><button class="small" onclick="editEleve('${e.id}')">✏️ 수정</button></div>
-   <div class="chips"><span class="small muted" style="align-self:center">${a}</span>${stSel(e)}${chip(esc(e.ecole))}${chip(r.classe?`<b>${esc(r.classe)}</b>${nivKo(r.classe)?' · '+nivKo(r.classe):''}`:'')}${chip(e.naissance?`만 ${age(e.naissance)}세`:'')}</div>
+   <div class="chips">${s==='장학중'?`<span class="tag ok">${a} 장학생</span>`:`<span class="tag bad">${a} ${s||'명단에 없음'}</span><button class="small primary" onclick="setStE('${e.id}','장학중')">올해 명단에 넣기</button>`}${chip(esc(e.ecole))}${chip(r.classe?`<b>${esc(r.classe)}</b>${nivKo(r.classe)?' · '+nivKo(r.classe):''}`:'')}${chip(e.naissance?`만 ${age(e.naissance)}세`:'')}</div>
    ${phOld?`<div class="small muted" style="margin:-2px 0 8px">사진은 ${phOld} 사진입니다 — 사진을 눌러 ${a} 사진을 올리세요</div>`:''}
    <div class="pgrid">
     <div><div class="k">생년월일</div><div>${fmtD(e.naissance)||'—'}</div></div>
@@ -368,7 +368,7 @@ function editEleve(id){
  <div class="field"><label>아버지 / 보호자</label><input id="f_pere" value="${esc(e.pere)}"></div>
  <div class="field"><label>어머니 / 보호자</label><input id="f_mere" value="${esc(e.mere)}"></div>
  <div class="field"><label>연락처</label><input id="f_tel" value="${esc(e.tel)}" placeholder="76880019 / 65011811"></div>
- ${ys.map(y=>`<div class="field"><label>${y} 상태</label><select id="f_st_${y}"><option value=""></option>${ST_E.map(s=>`<option ${e.statut[y]===s?'selected':''}>${s}</option>`).join('')}</select></div>`).join('')}
+ ${ys.map(y=>`<div class="field"><label>${y} 명단</label><select id="f_st_${y}"><option value="">명단에 없음</option>${ST_E.map(s=>`<option ${e.statut[y]===s?'selected':''}>${s}</option>`).join('')}</select></div>`).join('')}
  <div class="field full"><label>메모</label><textarea id="f_memo">${esc(e.memo)}</textarea></div></div>
  <div class="actions">${id?`<button class="danger" onclick="delEleve('${id}')" style="margin-right:auto">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveEleve('${id||''}')">저장</button></div>`);
 }
