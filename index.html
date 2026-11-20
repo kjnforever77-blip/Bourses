@@ -53,11 +53,11 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
 .steps{counter-reset:s;list-style:none;padding:0;margin:0}.steps li{counter-increment:s;padding:6px 0 6px 34px;position:relative}.steps li:before{content:counter(s);position:absolute;left:0;top:5px;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px}
 /* 학생 상세 */
 .prof{display:flex;gap:22px;align-items:flex-start}
-.pwrap{position:relative;flex:none;width:150px;height:190px}
-.pphoto{width:150px;height:190px;object-fit:cover;border-radius:12px;display:flex}
+.pwrap{position:relative;flex:none;width:170px;height:215px}
+.pphoto{width:170px;height:215px;object-fit:cover;border-radius:12px;display:flex}
 .pinfo{flex:1;min-width:0}
 .ptop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}.ptop h1{font-size:24px}
-.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.pgrid .w2{grid-column:span 2}.pgrid .w3{grid-column:1/-1}
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 18px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}.pgrid .w2{grid-column:span 2}.pgrid .w3{grid-column:1/-1}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 16px;padding:0 18px;overflow-x:auto}
 .tabs a{padding:9px 14px;cursor:pointer;border-bottom:2.5px solid transparent;font-weight:600;color:var(--muted);white-space:nowrap}.tabs a.on{color:var(--accent);border-bottom-color:var(--accent)}
 .tabs a .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:5px;vertical-align:middle}
@@ -74,6 +74,11 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
 .kid .kim{width:52px;height:64px;border-radius:7px;object-fit:cover;flex:none;display:flex}
 .kid .x{position:absolute;top:4px;right:6px;border:0;background:none;color:#9aa1b2;font-size:15px;padding:0 4px}.kid .x:hover{color:var(--danger)}
 /* 모달 */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:6px}
+.gi{position:relative;cursor:pointer;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#f3f4f7}.gi:hover{border-color:#a9a6d6}
+.gi img{width:100%;height:140px;object-fit:cover;display:block}.gdoc{height:140px;display:flex;align-items:center;justify-content:center;font-size:42px}
+.glb{font-size:11.5px;padding:4px 7px;background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:24px}
+.gmain{position:absolute;top:6px;left:6px;background:var(--accent);color:#fff;font-size:11px;padding:1px 7px;border-radius:9px}
 .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:30px 10px;overflow:auto;z-index:50}
 .modal{background:#fff;border-radius:12px;padding:18px 20px;width:min(720px,100%);box-shadow:0 10px 40px rgba(0,0,0,.25)}.modal h3{font-size:17px;margin:0 0 12px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px}.form-grid .full{grid-column:1/-1}
@@ -111,13 +116,13 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    구조: 학생(바뀌지 않는 정보) + 학생.ans[학년도](그해 명단·학교·학년·장래희망·기도제목·사진·카드)
          후원자 + 후원자.ans[학년도](감사카드 보낸 날)  /  liens: 학년도별 학생-후원자 연결
    ===================================================================== */
-const APP_VERSION='6 (2026-11-20)';
+const APP_VERSION='7 (2026-11-20)';
 const DATAFILE='bourses_donnees.json',KEY='bourses_db_v1';
 const ST=['장학생','중단','졸업'];
 const CLS=['PS','MS','GS','CP1','CP2','CE1','CE2','CM1','CM2','6ème','5ème','4ème','3ème','2nde','1ère','Tle'];
 const NIV={PS:'유치원(소)',MS:'유치원(중)',GS:'유치원(대)',CP1:'초등 1학년',CP2:'초등 2학년',CE1:'초등 3학년',CE2:'초등 4학년',CM1:'초등 5학년',CM2:'초등 6학년','6ème':'중학교 1학년','5ème':'중학교 2학년','4ème':'중학교 3학년','3ème':'중학교 4학년','2nde':'고등학교 1학년','1ère':'고등학교 2학년','Tle':'고등학교 3학년'};
 let MIGRATED=false,DB=null,DIR=null,DSTATE='none',DERR='',LASTMOD=0,DIRTY=false;
-const UI={view:'home',id:null,annee:null,tab:null,f:{r:'in',ec:'',q:'',v:''},df:'cur',cd:{don:'',ids:null}};
+const UI={view:'eleves',id:null,annee:null,tab:null,f:{r:'cur',ec:'',q:''},df:'cur',cd:{don:'',ids:null}};
 
 /* ---------- 도구 ---------- */
 const $=s=>document.querySelector(s);
@@ -134,7 +139,7 @@ function nextCls(c){const i=CLS.findIndex(k=>k.toLowerCase()===String(c||'').tri
 const clsLabel=c=>c?esc(c)+(nivKo(c)?` <span class="muted">· ${nivKo(c)}</span>`:''):'';
 
 /* ---------- 자료 접근 ---------- */
-const A=()=>UI.annee||DB.settings.annee;
+const CUR=()=>DB.settings.annee;const A=()=>UI.annee||DB.settings.annee;
 const elv=id=>DB.eleves.find(e=>e.id===id);const don=id=>DB.donateurs.find(d=>d.id===id);
 const Y=(e,a=A())=>e.ans[a]||{};
 const inR=(e,a=A())=>Y(e,a).st==='장학생';
@@ -143,15 +148,16 @@ const donsOf=(eid,a=A())=>DB.liens.filter(l=>l.annee===a&&l.eleve===eid).map(l=>
 const kidsOf=(did,a=A())=>DB.liens.filter(l=>l.annee===a&&l.donateur===did).map(l=>elv(l.eleve)).filter(Boolean).sort(cmpNom);
 const activeDons=(a=A())=>DB.donateurs.filter(d=>kidsOf(d.id,a).length).sort(cmpKo);
 const annees=()=>{const s=new Set(DB.settings.annees);DB.eleves.forEach(e=>Object.keys(e.ans).forEach(a=>s.add(a)));return [...s].sort()};
-function lastPhoto(e){const ys=Object.keys(e.ans).sort().reverse();for(const y of ys)if(e.ans[y].photo)return {a:y,f:e.ans[y].photo};return null}
+
 const curEcole=e=>{const ys=Object.keys(e.ans).sort().reverse();for(const y of ys)if(e.ans[y].ecole)return e.ans[y].ecole;return ''};
 function nextId(arr,p){let n=0;arr.forEach(x=>{const k=parseInt(String(x.id).slice(1),10);if(k>n)n=k});return p+String(n+1).padStart(3,'0')}
 function logJ(m){DB.journal.push({at:new Date().toISOString(),msg:m});if(DB.journal.length>800)DB.journal=DB.journal.slice(-800)}
 const cardDone=(e,a=A())=>!!(Y(e,a).projet&&Y(e,a).priere);
+const isImg=f=>/\.(jpe?g|png|gif|webp|heic)$/i.test(f);
 const sentOf=(d,a=A())=>d.ans?.[a]?.carte||'';
 
 /* ---------- 자료 형식 (이전 형식 자동 변환) ---------- */
-function emptyDB(){const n=new Date(),y=n.getMonth()>=7?n.getFullYear():n.getFullYear()-1,a=`${y}-${String(y+1).slice(2)}`;return {meta:{app:'bourses',format:2,rev:0,at:new Date().toISOString()},settings:{annee:a,annees:[a],cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',lastBackup:null},eleves:[],donateurs:[],liens:[],journal:[]}}
+function emptyDB(){const n=new Date(),y=n.getMonth()>=7?n.getFullYear():n.getFullYear()-1,a=`${y}-${String(y+1).slice(2)}`;return {meta:{app:'bourses',format:3,rev:0,at:new Date().toISOString()},settings:{annee:a,annees:[a],cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',lastBackup:null},eleves:[],donateurs:[],liens:[],journal:[]}}
 function migrate(d){
  d.meta=d.meta||{rev:0};d.settings=d.settings||{};d.journal=d.journal||[];
  if((d.meta.format||1)<2){
@@ -164,8 +170,15 @@ function migrate(d){
   d.donateurs=(d.donateurs||[]).map(x=>({id:x.id,nom:x.nom,type:/교회|단체|WMC/.test(x.nom)?'교회·단체':'개인',contact:x.contact||'',cycle:x.cycle||'',montant:x.montant??null,devise:x.devise||'KRW',memo:x.memo||'',archive:(x.statut||{})[last]==='중단'&&!d.liens.some(l=>l.annee===last&&l.donateur===x.id),ans:{}}));
   delete d.settings.ecoles;d.meta.format=2;MIGRATED=true;d.journal.push({at:new Date().toISOString(),msg:'새 구조(형식 2)로 자동 변환'});
  }
+ if(d.meta.format<3){
+  (d.eleves||[]).forEach(e=>{e.galerie=e.galerie||[];let main='',mainY='';Object.keys(e.ans||{}).sort().forEach(y=>{const r=e.ans[y];
+   if(r.photo){e.galerie.push({dir:'photos',f:r.photo,date:'',label:`${y} 사진`});if(y>=mainY){main=r.photo;mainY=y}delete r.photo}
+   if(r.fiche){e.galerie.push({dir:'fiches',f:r.fiche,date:'',label:`${y} 카드`});delete r.fiche}});
+   e.photo=e.photo||main});
+  d.meta.format=3;MIGRATED=true;d.journal.push({at:new Date().toISOString(),msg:'새 구조(형식 3: 사진·자료 모음)로 자동 변환'});
+ }
  d.settings.annees=d.settings.annees||[d.settings.annee];d.settings.cardTitle=d.settings.cardTitle??'후원해 주셔서 감사합니다';d.settings.cardFooter=d.settings.cardFooter??'부르키나파소 보보디울라소에서';
- d.eleves=d.eleves||[];d.donateurs=d.donateurs||[];d.liens=d.liens||[];d.eleves.forEach(e=>e.ans=e.ans||{});d.donateurs.forEach(x=>x.ans=x.ans||{});
+ d.eleves=d.eleves||[];d.donateurs=d.donateurs||[];d.liens=d.liens||[];d.eleves.forEach(e=>{e.ans=e.ans||{};e.galerie=e.galerie||[];e.photo=e.photo||''});d.donateurs.forEach(x=>x.ans=x.ans||{});
  return d;
 }
 
@@ -213,157 +226,149 @@ window.addEventListener('beforeunload',e=>{if(DIRTY&&DSTATE==='ok'){writeData();
 /* ---------- 사진·카드 원본 ---------- */
 let PHOTO={};
 async function fileURL(dir,name){if(!name||!DIR||DSTATE!=='ok')return null;const k=dir+'/'+name;if(PHOTO[k])return PHOTO[k];try{const f=await (await (await DIR.getDirectoryHandle(dir)).getFileHandle(name)).getFile();return PHOTO[k]=URL.createObjectURL(f)}catch(e){return null}}
-async function photoURL(e,a){const n=a?Y(e,a).photo:lastPhoto(e)?.f;return fileURL('photos',n)}
-const imgTag=(e,cls,a)=>`<img class="${cls}" data-eid="${e.id}" ${a?`data-yr="${a}"`:''} alt="" style="visibility:hidden">`;
-async function fillPhotos(root){await Promise.all([...root.querySelectorAll('img[data-eid]')].map(async im=>{const e=elv(im.dataset.eid);const u=e&&await photoURL(e,im.dataset.yr||null);if(u){im.src=u;im.style.visibility='visible'}else im.replaceWith(Object.assign(document.createElement('div'),{className:im.className+' ph',textContent:'사진 없음'}))}))}
-function resizeImg(file,max=1000){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight;const r=Math.min(1,max/Math.max(w,h));w=Math.round(w*r);h=Math.round(h*r);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);c.toBlob(b=>b?res(b):rej(new Error('이미지 변환 실패')),'image/jpeg',.87)};img.onerror=()=>rej(new Error('사진 파일을 읽을 수 없습니다'));img.src=URL.createObjectURL(file)})}
-function needDir(){if(DIR&&DSTATE==='ok')return true;alert('사진과 카드 원본을 저장하려면 먼저 OneDrive 폴더를 연결해 주세요.');return false}
+async function photoURL(e){return fileURL('photos',e.photo)}
+const imgTag=(e,cls)=>`<img class="${cls}" data-eid="${e.id}" alt="" style="visibility:hidden">`;
+async function fillPhotos(root){
+ await Promise.all([...root.querySelectorAll('img[data-eid]')].map(async im=>{const e=elv(im.dataset.eid);const u=e&&await photoURL(e);if(u){im.src=u;im.style.visibility='visible'}else im.replaceWith(Object.assign(document.createElement('div'),{className:im.className+' ph',textContent:'사진 없음'}))}));
+ await Promise.all([...root.querySelectorAll('img[data-g]')].map(async im=>{const [d,f]=im.dataset.g.split('|');const u=await fileURL(d,f);if(u){im.src=u;im.style.visibility='visible'}}));
+}
+function resizeImg(file,max=1600){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight;const r=Math.min(1,max/Math.max(w,h));w=Math.round(w*r);h=Math.round(h*r);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);c.toBlob(b=>b?res(b):rej(new Error('이미지 변환 실패')),'image/jpeg',.87)};img.onerror=()=>rej(new Error('사진 파일을 읽을 수 없습니다: '+file.name));img.src=URL.createObjectURL(file)})}
+function needDir(){if(DIR&&DSTATE==='ok')return true;alert('사진과 자료를 저장하려면 먼저 OneDrive 폴더를 연결해 주세요.');return false}
 const setY=(e,a,o)=>{e.ans[a]=Object.assign(e.ans[a]||{},o)};
-async function uploadPhoto(eid,a,file){if(!file||!needDir())return;try{const e=elv(eid),b=await resizeImg(file),n=`${eid}_${a}.jpg`;await saveSub('photos',n,b);setY(e,a,{photo:n});delete PHOTO['photos/'+n];save(`사진: ${e.nom} (${a})`);render();toast('사진 저장됨')}catch(x){alert(x.message)}}
-async function uploadFiche(eid,a,file){if(!file||!needDir())return;try{const e=elv(eid),ext=(file.name.split('.').pop()||'pdf').toLowerCase(),n=`${eid}_${a}.${ext}`;await saveSub('fiches',n,file);setY(e,a,{fiche:n});delete PHOTO['fiches/'+n];save(`카드 원본: ${e.nom} (${a})`);render();toast('카드 원본 저장됨')}catch(x){alert(x.message)}}
-async function openFiche(eid,a){const u=await fileURL('fiches',Y(elv(eid),a).fiche);if(u)window.open(u,'_blank');else alert('파일을 열 수 없습니다. 폴더 연결을 확인해 주세요.')}
+async function uploadFiles(eid,files){
+ if(!files||!files.length||!needDir())return;const e=elv(eid);let n=0;
+ for(const file of files){try{const t=Date.now()+'_'+n;
+   if(file.type.startsWith('image/')){const b=await resizeImg(file);const f=`${eid}_${t}.jpg`;await saveSub('photos',f,b);e.galerie.push({dir:'photos',f,date:today(),label:''});if(!e.photo)e.photo=f}
+   else{const ext=(file.name.split('.').pop()||'pdf').toLowerCase();const f=`${eid}_${t}.${ext}`;await saveSub('fiches',f,file);e.galerie.push({dir:'fiches',f,date:today(),label:file.name.replace(/\.[^.]+$/,'')})}
+   n++}catch(x){alert(x.message)}}
+ if(n){save(`사진·자료 ${n}개 올림: ${e.nom}`);render();toast(`${n}개 저장됨`)}
+}
+async function setMain(eid,f){const e=elv(eid);e.photo=f;save(`대표 사진 변경: ${e.nom}`);closeM();render()}
+async function delFile(eid,i){const e=elv(eid),g=e.galerie[i];if(!confirm('이 파일을 지울까요?'))return;e.galerie.splice(i,1);if(g.dir==='photos'&&e.photo===g.f)e.photo=(e.galerie.find(x=>x.dir==='photos')||{}).f||'';
+ try{await (await DIR.getDirectoryHandle(g.dir)).removeEntry(g.f)}catch(x){}delete PHOTO[g.dir+'/'+g.f];save(`파일 삭제: ${e.nom}`);closeM();render()}
+async function viewFile(eid,i){const e=elv(eid),g=e.galerie[i];const u=await fileURL(g.dir,g.f);if(!u){alert('파일을 열 수 없습니다. 폴더 연결을 확인해 주세요.');return}
+ if(!isImg(g.f)){window.open(u,'_blank');return}
+ modal(`<div style="text-align:center"><img src="${u}" style="max-width:100%;max-height:70vh;border-radius:8px"></div>
+ <div class="row" style="margin-top:10px;align-items:center"><input id="g_lb" value="${esc(g.label)}" placeholder="설명 (예: 2026-27 사진)" style="flex:1"><button onclick="elv('${eid}').galerie[${i}].label=fv('g_lb');save();closeM();render()">설명 저장</button></div>
+ <div class="actions"><button class="danger" style="margin-right:auto" onclick="delFile('${eid}',${i})">삭제</button>${g.dir!=='photos'?'':e.photo===g.f?'<span class="tag ok">대표 사진</span>':`<button onclick="setMain('${eid}','${g.f}')">대표 사진으로</button>`}<button onclick="window.open('${u}','_blank')">크게 보기</button><button class="primary" onclick="closeM()">닫기</button></div>`)}
 
 /* ---------- 화면 틀 ---------- */
-function go(v,id,tab){UI.view=v;UI.id=id??null;UI.tab=tab??null;render();window.scrollTo(0,0)}
+function go(v,id,tab){if(v==='eleves'||v==='eleve')UI.annee=null;UI.view=v;UI.id=id??null;UI.tab=tab??null;render();window.scrollTo(0,0)}
 function syncLabel(){if(!DIR_OK)return '이 기기: 보기 전용';if(DSTATE==='ok')return (DIRTY?'저장 중…':'✓ 저장됨')+' · '+DIR.name;if(DSTATE==='need')return '폴더 다시 연결 필요';if(DSTATE==='error')return '저장 오류: '+DERR;return '폴더 연결 안 됨'}
 const renderFoot=()=>{const s=$('#syncst');if(s)s.textContent=syncLabel()};
 function renderNav(){
- const it=[['home','🏠 올해 현황'],['eleves','👧 장학생'],['donateurs','🤝 후원자'],['cartes','💌 감사카드'],['reglages','⚙️ 설정']];
+ const it=[['eleves','👧 장학생 명단'],['statut','📋 장학 현황'],['donateurs','🤝 후원자'],['cartes','💌 감사카드'],['reglages','⚙️ 설정']];
  const cur={eleve:'eleves',donateur:'donateurs'}[UI.view]||UI.view;
  $('#nav').innerHTML=`<div class="brand">장학생 관리</div>
- <div class="yearsel"><label>학년도</label><select onchange="UI.annee=this.value;UI.tab=null;render()">${annees().map(a=>`<option ${a===A()?'selected':''}>${a}</option>`).join('')}</select></div>
  ${it.map(([v,l])=>`<a class="${cur===v?'active':''}" onclick="go('${v}')">${l}</a>`).join('')}
  <div class="foot"><div id="syncst" style="color:#eceaf8">${esc(syncLabel())}</div>${DSTATE==='ok'?'':`<button onclick="${DSTATE==='need'?'resumeDir()':'pickDir()'}">📁 ${DSTATE==='need'?'폴더 다시 연결':'OneDrive 폴더 연결'}</button>`}<div style="margin-top:8px">버전 ${APP_VERSION}</div></div>`;
 }
 function banner(){if(DSTATE==='ok')return '';if(DSTATE==='need')return `<div class="banner">OneDrive 폴더 연결을 다시 허락해 주세요. <button class="small primary" onclick="resumeDir()">폴더 다시 연결</button></div>`;if(!DIR_OK)return `<div class="banner info">이 기기에서는 보기만 됩니다. 입력·사진 저장은 맥북 크롬에서 해 주세요.</div>`;return `<div class="banner">OneDrive 폴더가 연결되지 않았습니다. <button class="small primary" onclick="pickDir()">폴더 연결</button></div>`}
-function render(){if(!DB){renderWelcome();return}renderNav();const v={home:vHome,eleves:vEleves,eleve:vEleve,donateurs:vDonateurs,donateur:vDonateur,cartes:vCartes,reglages:vReglages}[UI.view]||vHome;$('#main').innerHTML=banner()+v();fillPhotos($('#main'));if(UI.view==='cartes')drawPreviews()}
+function render(){if(!DB){renderWelcome();return}renderNav();const v={eleves:vEleves,statut:vStatut,eleve:vEleve,donateurs:vDonateurs,donateur:vDonateur,cartes:vCartes,reglages:vReglages}[UI.view]||vEleves;$('#main').innerHTML=banner()+v();fillPhotos($('#main'));if(UI.view==='cartes')drawPreviews()}
 function renderWelcome(){$('#nav').innerHTML='<div class="brand">장학생 관리</div>';$('#main').innerHTML=`<div class="card" style="max-width:620px"><h2>시작하기</h2><p>자료는 OneDrive의 한 폴더에 저장됩니다(자료 파일, 사진, 카드 원본, 자동 백업). <b>11.장학 › 장학생 관리</b> 폴더를 고르세요.</p><div class="row"><button class="primary" onclick="pickDir()">📁 OneDrive 폴더 선택</button><label class="btn">백업 파일에서 가져오기<input type="file" accept=".json" hidden onchange="restoreBackup(this.files[0])"></label></div>${DIR_OK?'':'<p class="banner" style="margin-top:12px">이 브라우저에서는 폴더 연결이 안 됩니다. 맥북의 크롬에서 열어 주세요.</p>'}</div>`}
 const hd=(t,b='')=>`<div class="hd"><h1>${t}</h1><div class="hp">${b}</div></div>`;
 function modal(html){const bg=document.createElement('div');bg.className='modal-bg';bg.innerHTML=`<div class="modal">${html}</div>`;bg.addEventListener('mousedown',ev=>{if(ev.target===bg)bg.remove()});document.body.appendChild(bg);return bg}
 const closeM=()=>document.querySelector('.modal-bg')?.remove();
 const fv=id=>document.getElementById(id)?.value.trim()??'';
 
-/* ---------- 홈: 올해 현황 ---------- */
-function vHome(){
- const a=A(),R=roster(a),D=activeDons(a);
- const noDon=R.filter(e=>!donsOf(e.id,a).length),noCard=R.filter(e=>!cardDone(e,a)),noPh=R.filter(e=>!Y(e,a).photo),noSent=D.filter(d=>!sentOf(d,a));
- const pr=(t,done,tot,list,fn)=>{const p=tot?Math.round(done/tot*100):0;return `<div class="prog"><div class="ptop" style="margin:0"><b>${t}</b><span class="muted">${done} / ${tot}</span></div><div class="bar"><i class="${done===tot&&tot?'done':''}" style="width:${p}%"></i></div>${list.length?`<div class="todo">${list.map(fn).join('')}</div>`:tot?'<div class="small" style="color:var(--ok)">✓ 모두 끝났습니다</div>':''}</div>`};
- const kl=e=>`<a onclick="go('eleve','${e.id}')">${esc(e.nom)}</a>`,dl=d=>`<a onclick="go('donateur','${d.id}')">${esc(d.nom)}</a>`;
- return hd(`${a} 학년도 현황`,`<button onclick="printFiches(roster().map(e=>e.id))">🖨 학생 카드 양식 출력</button>`)+
- `<div class="stats"><div class="stat"><div class="v">${R.length}</div><div class="l">장학생</div></div><div class="stat"><div class="v">${D.length}</div><div class="l">후원자 (학생과 연결된)</div></div><div class="stat"><div class="v" style="color:${noDon.length?'var(--warn)':'inherit'}">${noDon.length}</div><div class="l">후원자 없는 학생</div></div></div>
- <div class="card"><h2>올해 할 일</h2>
- ${pr('① 장래희망·기도제목 입력',R.length-noCard.length,R.length,noCard,kl)}
- ${pr('② 올해 사진',R.length-noPh.length,R.length,noPh,kl)}
- ${pr('③ 후원자 연결',R.length-noDon.length,R.length,noDon,kl)}
- ${pr('④ 감사카드 보내기',D.length-noSent.length,D.length,noSent,dl)}
- </div>
- <div class="card"><h2>한 해 순서</h2><ol class="steps"><li>9~10월: 장학생 명단 정하기 (장학생 › "명단에 없는 학생"에서 넣기)</li><li>위의 <b>학생 카드 양식</b>을 출력해 아이들에게 나눠 주기</li><li>받은 카드를 학생마다 입력하고, 카드 스캔과 올해 사진 올리기</li><li>후원자와 학생 연결하기</li><li>감사카드 메뉴에서 후원자별 카드를 만들어 보내고 "보냄" 표시하기</li></ol></div>`;
-}
-
-/* ---------- 장학생 목록 ---------- */
-function elevesFiltered(){const a=A(),f=UI.f,q=f.q.trim().toLowerCase();
- return DB.eleves.filter(e=>{const r=inR(e,a);if(f.r==='in'&&!r)return false;if(f.r==='out'&&r)return false;
-  const ec=Y(e,a).ecole||curEcole(e);if(f.ec&&ec!==f.ec)return false;
-  if(f.v==='nodon'&&donsOf(e.id,a).length)return false;if(f.v==='nocard'&&cardDone(e,a))return false;if(f.v==='noph'&&Y(e,a).photo)return false;
+/* ---------- 장학생 명단 ---------- */
+function elevesFiltered(){const a=CUR(),f=UI.f,q=f.q.trim().toLowerCase();
+ return DB.eleves.filter(e=>{const r=inR(e,a);if(f.r==='cur'&&!r)return false;if(f.r==='out'&&r)return false;
+  if(f.ec&&curEcole(e)!==f.ec)return false;
   if(q&&!(e.nom+' '+e.pere+' '+e.mere+' '+e.tel).toLowerCase().includes(q))return false;return true}).sort(cmpNom)}
 const setF=(k,v)=>{UI.f[k]=v;render()};
 function vEleves(){
- const a=A(),L=elevesFiltered(),f=UI.f,ecs=[...new Set(DB.eleves.map(e=>Y(e,a).ecole||curEcole(e)).filter(Boolean))].sort();
+ const a=CUR(),L=elevesFiltered(),f=UI.f,ecs=[...new Set(DB.eleves.map(curEcole).filter(Boolean))].sort();
  const opt=(arr,cur)=>arr.map(([v,l])=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`).join('');
- return hd(`장학생 <span class="muted" style="font-weight:400;font-size:15px">${a}</span>`,`<button class="primary" onclick="editEleve()">＋ 새 학생</button>`)+
+ return hd('장학생 명단',`<button class="primary" onclick="editEleve()">＋ 새 학생</button>`)+
  `<div class="card"><div class="row">
-  <div class="field"><label>명단</label><select onchange="setF('r',this.value)">${opt([['in',`${a} 장학생`],['out',`${a} 명단에 없는 학생`],['all','전체']],f.r)}</select></div>
+  <div class="field"><label>보기</label><select onchange="setF('r',this.value)">${opt([['cur',`현재 장학생 (${a})`],['out','장학이 끝난 학생'],['all','전체']],f.r)}</select></div>
   <div class="field"><label>학교</label><select onchange="setF('ec',this.value)"><option value="">전체</option>${ecs.map(x=>`<option ${f.ec===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
-  <div class="field"><label>보기</label><select onchange="setF('v',this.value)">${opt([['','전체'],['nodon','후원자 없음'],['nocard','장래희망·기도제목 없음'],['noph','올해 사진 없음']],f.v)}</select></div>
   <div class="field" style="flex:1"><label>검색 (이름·부모·전화)</label><input id="q" value="${esc(f.q)}" oninput="UI.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{render();const i=$('#q');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)"></div>
  </div></div>
- <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th></th><th>이름</th><th class="hide-m">나이</th><th>학교 · 학년</th><th>후원자</th>${f.r==='in'?'':'<th></th>'}</tr></thead><tbody>
- ${L.map(e=>{const y=Y(e,a),r=inR(e,a),ds=donsOf(e.id,a);return `<tr class="click" onclick="go('eleve','${e.id}')"><td style="width:52px">${imgTag(e,'thumb')}</td><td><b>${esc(e.nom)}</b></td><td class="hide-m">${e.naissance?age(e.naissance)+'세':''}</td><td>${esc(y.ecole||curEcole(e))}${y.classe?` · <b>${esc(y.classe)}</b>`:''}</td><td>${ds.map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||(r?'<span class="tag warn">없음</span>':'')}</td>${f.r==='in'?'':`<td onclick="event.stopPropagation()">${r?'<span class="tag ok">장학생</span>':`<span class="muted small">${esc(y.st||'')}</span> <button class="small primary" onclick="addRoster('${e.id}')">명단에 넣기</button>`}</td>`}</tr>`}).join('')||`<tr><td colspan="6" class="muted" style="padding:20px">해당하는 학생이 없습니다</td></tr>`}
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th>생년월일</th><th>나이</th><th>성별</th><th>학교</th></tr></thead><tbody>
+ ${L.map(e=>`<tr class="click" onclick="go('eleve','${e.id}')"><td><b>${esc(e.nom)}</b></td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${esc(curEcole(e))}</td></tr>`).join('')||`<tr><td colspan="5" class="muted" style="padding:20px">해당하는 학생이 없습니다</td></tr>`}
  </tbody></table></div><div class="small muted">${L.length}명</div>`;
 }
-function addRoster(id){const e=elv(id),a=A();const prev=Object.keys(e.ans).filter(y=>y<a).sort().pop();const p=prev?e.ans[prev]:{};setY(e,a,{st:'장학생',ecole:Y(e,a).ecole||p.ecole||curEcole(e),classe:Y(e,a).classe||nextCls(p.classe)});save(`${a} 명단에 넣음: ${e.nom}`);render();toast(`${e.nom}: ${a} 장학생`)}
 
 /* ---------- 학생 상세 ---------- */
 function vEleve(){
  const e=elv(UI.id);if(!e)return '<p>학생을 찾을 수 없습니다.</p>';
- const L=elevesFiltered(),i=L.findIndex(x=>x.id===e.id),prev=i>0?L[i-1]:null,next=i>=0&&i<L.length-1?L[i+1]:null;
- const ys=[...new Set([...Object.keys(e.ans),A()])].sort().reverse();const t=UI.tab&&ys.includes(UI.tab)?UI.tab:A();
- const lp=lastPhoto(e);
- const tabDot=y=>{const s=e.ans[y]?.st;return s?`<span class="dot" style="background:${s==='장학생'?'var(--ok)':'#c9ccd6'}"></span>`:''};
- return `<div class="hd"><div class="hp"><button onclick="go('eleves')">← 목록</button><button ${prev?'':'disabled'} onclick="go('eleve','${prev?.id||''}')">◀ 이전</button><button ${next?'':'disabled'} onclick="go('eleve','${next?.id||''}')">다음 ▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
- <div class="hp"><button onclick="printEleve('${e.id}','${t}')">🖨 학생 자료 출력</button></div></div>
+ const a=CUR(),y=Y(e,a),L=elevesFiltered(),i=L.findIndex(x=>x.id===e.id),prev=i>0?L[i-1]:null,next=i>=0&&i<L.length-1?L[i+1]:null;
+ const ds=donsOf(e.id,a);const past=Object.keys(e.ans).filter(x=>x!==a&&(e.ans[x].projet||e.ans[x].priere)).sort().reverse();
+ const kv=(k,v,c='')=>`<div class="${c}"><div class="k">${k}</div><div>${v||'<span class="muted">—</span>'}</div></div>`;
+ return `<div class="hd"><div class="hp"><button onclick="go('eleves')">← 명단</button><button ${prev?'':'disabled'} onclick="go('eleve','${prev?.id||''}')">◀ 이전</button><button ${next?'':'disabled'} onclick="go('eleve','${next?.id||''}')">다음 ▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
+ <div class="hp"><button onclick="printEleve('${e.id}')">🖨 출력</button>${ds.length?`<button onclick="UI.cd={don:'',ids:['${e.id}']};UI.annee=null;go('cartes')">💌 감사카드</button>`:''}</div></div>
  <div class="card prof">
   <div class="pwrap">${imgTag(e,'pphoto')}</div>
   <div class="pinfo">
    <div class="ptop"><h1>${esc(e.nom)}</h1><button class="small" onclick="editEleve('${e.id}')">✏️ 기본 정보 수정</button></div>
-   <div class="muted">${[e.sexe==='F'?'여':e.sexe==='M'?'남':'',e.naissance?`${fmtD(e.naissance)} (만 ${age(e.naissance)}세)`:''].filter(Boolean).join(' · ')||'생년월일 없음'}${lp?` <span class="small">· 사진 ${lp.a}</span>`:''}</div>
+   <div>${inR(e,a)?`<span class="tag ok">${a} 장학생</span>`:`<span class="tag">${a} 장학생 아님</span>`}${ds.map(d=>`<span class="tag vi" style="cursor:pointer" title="후원자 (출력물에는 안 나옴)" onclick="go('donateur','${d.id}')">${esc(d.nom)}</span>`).join('')}</div>
    <div class="pgrid">
-    <div><div class="k">아버지 / 보호자</div><div>${esc(e.pere)||'—'}</div></div>
-    <div><div class="k">어머니 / 보호자</div><div>${esc(e.mere)||'—'}</div></div>
-    <div><div class="k">연락처</div><div>${esc(e.tel)||'—'}</div></div>
-    ${e.memo?`<div class="w3"><div class="k">메모</div><div>${esc(e.memo)}</div></div>`:''}
+    ${kv('성별',e.sexe==='F'?'여':e.sexe==='M'?'남':'')}${kv('생년월일',e.naissance?`${fmtD(e.naissance)} (만 ${age(e.naissance)}세)`:'')}${kv('학교 · 학년',[esc(y.ecole||curEcole(e)),y.classe?`<b>${clsLabel(y.classe)}</b>`:''].filter(Boolean).join(' · '))}
+    ${kv('아버지 / 보호자',esc(e.pere))}${kv('어머니 / 보호자',esc(e.mere))}${kv('연락처',esc(e.tel))}
+    ${e.memo?kv('메모',esc(e.memo),'w3'):''}
    </div>
   </div>
  </div>
- <div class="card">
-  <div class="tabs">${ys.map(y=>`<a class="${y===t?'on':''}" onclick="UI.tab='${y}';render()">${y}${tabDot(y)}</a>`).join('')}</div>
-  ${yearPanel(e,t)}
+ <div class="card"><div class="ptop"><h2 style="margin:0">비전 · 기도제목 <span class="muted small" style="font-weight:400">${a}</span></h2><span class="small muted" id="vs"></span></div>
+  <div class="k" style="margin-top:6px">비전 (장래희망)</div><input id="t_pj" style="width:100%;font-size:15px" value="${esc(y.projet)}" onchange="saveVP('${e.id}')" placeholder="예: 간호사">
+  <div class="k" style="margin-top:12px">기도제목</div><textarea id="t_pr" style="font-size:15px;min-height:90px" onchange="saveVP('${e.id}')" placeholder="아이가 적은 기도제목">${esc(y.priere)}</textarea>
+  ${past.length?`<details style="margin-top:10px"><summary class="small" style="cursor:pointer;color:var(--accent)">지난 해 기록 보기 (${past.length})</summary>${past.map(x=>`<div style="margin-top:8px;padding:8px 10px;background:#f7f8fb;border-radius:8px"><b class="small">${x}</b>${e.ans[x].classe?` <span class="small muted">${esc(e.ans[x].classe)}</span>`:''}<div class="small"><span class="muted">비전</span> ${esc(e.ans[x].projet||'')}</div><div class="small"><span class="muted">기도제목</span> ${esc(e.ans[x].priere||'')}</div></div>`).join('')}</details>`:''}
+ </div>
+ <div class="card"><div class="ptop"><h2 style="margin:0">사진 · 자료 <span class="muted small" style="font-weight:400">${e.galerie.length}개</span></h2><label class="btn small primary">＋ 사진·자료 올리기<input type="file" accept="image/*,.pdf" multiple hidden onchange="uploadFiles('${e.id}',this.files)"></label></div>
+  <div class="gal">${e.galerie.map((g,i)=>`<div class="gi" onclick="viewFile('${e.id}',${i})">${isImg(g.f)?`<img data-g="${g.dir}|${esc(g.f)}" style="visibility:hidden">`:'<div class="gdoc">📄</div>'}${g.dir==='photos'&&e.photo===g.f?'<span class="gmain">대표</span>':''}<div class="glb">${esc(g.label||fmtD(g.date))}</div></div>`).join('')||'<div class="muted small">아직 올린 사진이나 자료가 없습니다. 사진, 카드 스캔(PDF) 등을 여러 개 한꺼번에 올릴 수 있어요.</div>'}</div>
  </div>`;
 }
-function yearPanel(e,a){
- const y=e.ans[a]||{},ds=donsOf(e.id,a),r=y.st==='장학생';
- return `<div class="stline">${r?`<span class="tag ok">${a} 장학생</span>`:`<span class="tag ${y.st?'bad':''}">${a} ${y.st||'명단에 없음'}</span><button class="small primary" onclick="addRoster('${e.id}')">${a} 명단에 넣기</button>`}
-  <span style="margin-left:auto" class="row"><button class="small" onclick="editYear('${e.id}','${a}')">✏️ ${a} 기록 수정</button></span></div>
- <div class="ygrid">
-  <div><label class="upl" title="${a} 사진 올리기">${y.photo?imgTag(e,'yphoto',a):'<div class="yphoto ph">사진 없음</div>'}<span class="ov">📷 ${y.photo?'사진 바꾸기':'사진 올리기'}</span><input type="file" accept="image/*" hidden onchange="uploadPhoto('${e.id}','${a}',this.files[0])"></label>
-   <div style="margin-top:8px">${y.fiche?`<button class="small" onclick="openFiche('${e.id}','${a}')">📄 카드 원본 보기</button>`:`<label class="btn small">📄 카드 원본 올리기<input type="file" accept="image/*,.pdf" hidden onchange="uploadFiche('${e.id}','${a}',this.files[0])"></label>`}</div></div>
-  <div>
-   <div class="k">학교 · 학년</div><div style="margin-bottom:12px">${esc(y.ecole)||'—'}${y.classe?` · <b>${clsLabel(y.classe)}</b>`:''}</div>
-   <div class="k">장래희망</div><div class="dream">${esc(y.projet)||'<span class="muted" style="font-weight:400">—</span>'}</div>
-   <div class="k">기도제목</div><div class="pray">${esc(y.priere)||'<span class="muted">—</span>'}</div>
-   ${y.note?`<div class="k" style="margin-top:12px">메모</div><div>${esc(y.note)}</div>`:''}
-   ${!y.projet&&!y.priere?`<div style="margin-top:12px"><button class="small primary" onclick="editYear('${e.id}','${a}')">카드 내용 입력</button></div>`:''}
-  </div>
-  <div class="side-box"><div class="ptop"><h3 style="margin:0">후원자</h3><button class="small" onclick="editLinks('${e.id}','${a}')">바꾸기</button></div>
-   <div class="small muted" style="margin-bottom:8px">출력물에는 나오지 않음</div>
-   ${ds.map(d=>`<div class="donrow" onclick="go('donateur','${d.id}','${a}')"><b>${esc(d.nom)}</b><span class="small muted">${esc(d.type)}</span></div>`).join('')||`<div class="muted small">${r?'아직 연결된 후원자가 없습니다':'—'}</div>`}
-   ${ds.length?`<button class="small" style="margin-top:6px" onclick="UI.cd={don:'',ids:['${e.id}']};UI.annee='${a}';go('cartes')">💌 이 학생 감사카드</button>`:''}
-  </div>
- </div>`;
-}
+function saveVP(eid){const e=elv(eid),a=CUR();setY(e,a,{projet:fv('t_pj'),priere:fv('t_pr')});save(`비전·기도제목: ${e.nom} (${a})`);const s=$('#vs');if(s)s.textContent='✓ 저장됨'}
 function editEleve(id){
- const e=id?elv(id):{nom:'',sexe:'',naissance:'',pere:'',mere:'',tel:'',memo:''};
+ const e=id?elv(id):{nom:'',sexe:'',naissance:'',pere:'',mere:'',tel:'',memo:'',ans:{}};const a=CUR(),y=(e.ans||{})[a]||{};
  modal(`<h3>${id?'기본 정보 수정':'새 학생'}</h3><div class="form-grid">
  <div class="field full"><label>이름 (프랑스어, 성 이름)</label><input id="f_nom" value="${esc(e.nom)}"></div>
  <div class="field"><label>성별</label><select id="f_sexe"><option value=""></option><option value="M" ${e.sexe==='M'?'selected':''}>남</option><option value="F" ${e.sexe==='F'?'selected':''}>여</option></select></div>
  <div class="field"><label>생년월일</label><input id="f_nai" type="date" value="${esc(e.naissance)}"></div>
- <div class="field"><label>연락처</label><input id="f_tel" value="${esc(e.tel)}" placeholder="76880019 / 65011811"></div>
+ <div class="field"><label>학교</label><input id="f_ec" list="ecs" value="${esc(y.ecole||(id?curEcole(e):''))}">${ecoleList()}</div>
+ <div class="field"><label>학년 (${a})</label><input id="f_cl" list="cls" value="${esc(y.classe)}">${clsList()}</div>
  <div class="field"><label>아버지 / 보호자</label><input id="f_pere" value="${esc(e.pere)}"></div>
  <div class="field"><label>어머니 / 보호자</label><input id="f_mere" value="${esc(e.mere)}"></div>
- ${id?'':`<div class="field"><label>학교 (${A()})</label><input id="f_ec" list="ecs">${ecoleList()}</div><div class="field"><label>학년 (${A()})</label><input id="f_cl" list="cls">${clsList()}</div>`}
+ <div class="field full"><label>연락처</label><input id="f_tel" value="${esc(e.tel)}" placeholder="76880019 / 65011811"></div>
  <div class="field full"><label>메모</label><textarea id="f_memo">${esc(e.memo)}</textarea></div></div>
- ${id?'':`<p class="small muted">저장하면 ${A()} 장학생 명단에 들어갑니다.</p>`}
+ ${id?'':`<p class="small muted">저장하면 ${a} 장학생 명단에 들어갑니다.</p>`}
  <div class="actions">${id?`<button class="danger" style="margin-right:auto" onclick="delEleve('${id}')">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveEleve('${id||''}')">저장</button></div>`);
 }
 const ecoleList=()=>`<datalist id="ecs">${[...new Set(DB.eleves.flatMap(e=>Object.values(e.ans).map(y=>y.ecole)).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>`;
 const clsList=()=>`<datalist id="cls">${CLS.map(c=>`<option value="${c}">${NIV[c]}</option>`).join('')}</datalist>`;
-function saveEleve(id){const nom=fv('f_nom');if(!nom){alert('이름을 입력해 주세요');return}
- let e=id?elv(id):null;if(!e){e={id:nextId(DB.eleves,'B'),ans:{}};DB.eleves.push(e);e.ans[A()]={st:'장학생',ecole:fv('f_ec'),classe:fv('f_cl')}}
+function saveEleve(id){const nom=fv('f_nom');if(!nom){alert('이름을 입력해 주세요');return}const a=CUR();
+ let e=id?elv(id):null;if(!e){e={id:nextId(DB.eleves,'B'),ans:{[a]:{st:'장학생'}},galerie:[],photo:''};DB.eleves.push(e)}
  Object.assign(e,{nom,sexe:fv('f_sexe'),naissance:fv('f_nai'),pere:fv('f_pere'),mere:fv('f_mere'),tel:fv('f_tel'),memo:fv('f_memo')});
+ if(fv('f_ec')||fv('f_cl')||e.ans[a])setY(e,a,{ecole:fv('f_ec'),classe:fv('f_cl')});
  save((id?'기본 정보 수정: ':'새 학생: ')+nom);closeM();go('eleve',e.id)}
-function delEleve(id){const e=elv(id);if(!confirm(`${e.nom} 학생의 모든 기록을 지울까요?\n(그만둔 학생은 지우지 말고 학년도 기록에서 '중단'으로 두는 것이 좋습니다)`))return;DB.eleves=DB.eleves.filter(x=>x.id!==id);DB.liens=DB.liens.filter(l=>l.eleve!==id);save('학생 삭제: '+e.nom);closeM();go('eleves')}
-function editYear(eid,a){const e=elv(eid),y=e.ans[a]||{};
- modal(`<h3>${esc(e.nom)} — ${a}</h3><div class="form-grid">
- <div class="field"><label>명단</label><select id="y_st"><option value="">명단에 없음</option>${ST.map(s=>`<option ${y.st===s?'selected':''}>${s}</option>`).join('')}</select></div>
- <div class="field"><label>학교</label><input id="y_ec" list="ecs" value="${esc(y.ecole||curEcole(e))}">${ecoleList()}</div>
- <div class="field"><label>학년</label><input id="y_cl" list="cls" value="${esc(y.classe)}">${clsList()}</div>
- <div class="field full"><label>장래희망</label><input id="y_pj" value="${esc(y.projet)}"></div>
- <div class="field full"><label>기도제목</label><textarea id="y_pr">${esc(y.priere)}</textarea></div>
- <div class="field full"><label>메모 (성적·진급 등)</label><input id="y_nt" value="${esc(y.note)}"></div></div>
- <div class="actions"><button onclick="closeM()">취소</button><button class="primary" onclick="saveYear('${eid}','${a}')">저장</button></div>`)}
-function saveYear(eid,a){const e=elv(eid);setY(e,a,{st:fv('y_st'),ecole:fv('y_ec'),classe:fv('y_cl'),projet:fv('y_pj'),priere:fv('y_pr'),note:fv('y_nt')});if(!e.ans[a].st)delete e.ans[a].st;
- if(e.ans[a].st!=='장학생'&&DB.liens.some(l=>l.annee===a&&l.eleve===eid)&&confirm(`${a} 명단에서 빠졌습니다. 이 학년도 후원자 연결도 지울까요?`))DB.liens=DB.liens.filter(l=>!(l.annee===a&&l.eleve===eid));
- save(`${a} 기록 수정: ${e.nom}`);closeM();render()}
+function delEleve(id){const e=elv(id);if(!confirm(`${e.nom} 학생의 모든 기록을 지울까요?\n(장학이 끝난 학생은 지우지 말고 장학 현황에서 명단에서만 빼는 것이 좋습니다)`))return;DB.eleves=DB.eleves.filter(x=>x.id!==id);DB.liens=DB.liens.filter(l=>l.eleve!==id);save('학생 삭제: '+e.nom);closeM();go('eleves')}
+
+/* ---------- 장학 현황 (학년도별) ---------- */
+function vStatut(){
+ const a=A(),R=roster(a),D=activeDons(a),ys=annees(),n=+ys.at(-1).slice(0,4)+1,na=`${n}-${String(n+1).slice(2)}`;
+ const noDon=R.filter(e=>!donsOf(e.id,a).length).length;
+ return `<div class="hd"><div class="hp"><h1>장학 현황</h1><select style="font-size:16px;font-weight:600;padding:5px 10px" onchange="if(this.value==='+')newYear('${na}');else{UI.annee=this.value;render()}">${ys.map(y=>`<option ${y===a?'selected':''}>${y}</option>`).join('')}<option value="+">＋ ${na} 학년도 만들기</option></select>${a===CUR()?'<span class="tag ok">현재 학년도</span>':`<button class="small" onclick="DB.settings.annee='${a}';save('현재 학년도: ${a}');render()">현재 학년도로 정하기</button>`}</div>
+ <div class="hp"><button onclick="printFiches(roster('${a}').map(e=>e.id))">🖨 학생 카드 양식</button><button class="primary" onclick="addToRoster('${a}')">＋ 학생 넣기</button></div></div>
+ <div class="stats"><div class="stat"><div class="v">${R.length}</div><div class="l">장학생</div></div><div class="stat"><div class="v">${D.length}</div><div class="l">후원자</div></div><div class="stat"><div class="v" style="color:${noDon?'var(--warn)':'inherit'}">${noDon}</div><div class="l">후원자 없는 학생</div></div></div>
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>장학생</th><th>학교</th><th>학년</th><th>후원자</th><th></th></tr></thead><tbody>
+ ${R.map(e=>{const y=Y(e,a),ds=donsOf(e.id,a);return `<tr><td><a href="#" onclick="go('eleve','${e.id}');return false"><b>${esc(e.nom)}</b></a></td>
+  <td><input list="ecs" value="${esc(y.ecole)}" style="width:190px" onchange="setY(elv('${e.id}'),'${a}',{ecole:this.value.trim()});save()"></td>
+  <td><input list="cls" value="${esc(y.classe)}" style="width:80px" onchange="setY(elv('${e.id}'),'${a}',{classe:this.value.trim()});save()"></td>
+  <td>${ds.map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||'<span class="tag warn">없음</span>'} <button class="small" onclick="editLinks('${e.id}','${a}')">바꾸기</button></td>
+  <td><button class="small" title="${a} 명단에서 빼기" onclick="rmRoster('${e.id}','${a}')">빼기</button></td></tr>`}).join('')||`<tr><td colspan="5" class="muted" style="padding:20px">${a} 장학생이 없습니다. "＋ 학생 넣기"로 명단을 만드세요.</td></tr>`}
+ </tbody></table>${ecoleList()}${clsList()}</div>
+ <h2 style="margin-top:6px">후원자별</h2>
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>후원자</th><th>후원 학생</th><th>감사카드</th></tr></thead><tbody>
+ ${D.map(d=>{const k=kidsOf(d.id,a),s=sentOf(d,a);return `<tr><td><a href="#" onclick="go('donateur','${d.id}','${a}');return false"><b>${esc(d.nom)}</b></a></td><td class="small">${k.map(e=>esc(e.nom)).join(', ')}</td><td>${s?`<span class="tag ok">보냄 ${fmtD(s)}</span>`:`<button class="small" onclick="UI.cd={don:'${d.id}',ids:null};go('cartes')">만들기</button>`}</td></tr>`}).join('')||'<tr><td colspan="3" class="muted" style="padding:16px">연결된 후원자가 없습니다</td></tr>'}
+ </tbody></table></div>`;
+}
+function addToRoster(a){const L=DB.eleves.filter(e=>!inR(e,a)).sort(cmpNom);
+ modal(`<h3>${a} 명단에 학생 넣기</h3><div class="chk">${L.map(e=>`<label><input type="checkbox" value="${e.id}"> ${esc(e.nom)} <span class="muted small">${esc(curEcole(e))}</span></label>`).join('')||'<span class="muted">넣을 학생이 없습니다</span>'}</div>
+ <div class="actions"><button style="margin-right:auto" onclick="closeM();editEleve()">＋ 새 학생 만들기</button><button onclick="closeM()">취소</button><button class="primary" onclick="saveAddRoster('${a}')">넣기</button></div>`)}
+function saveAddRoster(a){const ids=[...document.querySelectorAll('.chk input:checked')].map(x=>x.value);ids.forEach(id=>{const e=elv(id),prev=Object.keys(e.ans).filter(y=>y<a).sort().pop(),p=prev?e.ans[prev]:{};setY(e,a,{st:'장학생',ecole:Y(e,a).ecole||p.ecole||curEcole(e),classe:Y(e,a).classe||nextCls(p.classe)})});save(`${a} 명단에 넣음: ${ids.map(i=>elv(i).nom).join(', ')}`);closeM();render()}
+function rmRoster(id,a){const e=elv(id);if(!confirm(`${e.nom}을(를) ${a} 장학생 명단에서 뺄까요?\n(학생 자료와 지난 기록은 그대로 남습니다)`))return;setY(e,a,{st:'중단'});DB.liens=DB.liens.filter(l=>!(l.annee===a&&l.eleve===id));save(`${a} 명단에서 뺌: ${e.nom}`);render()}
 function editLinks(eid,a){const e=elv(eid),cur=new Set(donsOf(eid,a).map(d=>d.id));const L=DB.donateurs.filter(d=>!d.archive||cur.has(d.id)).sort((x,y)=>kidsOf(y.id,a).length-kidsOf(x.id,a).length||cmpKo(x,y));
  modal(`<h3>${esc(e.nom)} — ${a} 후원자</h3><div class="chk">${L.map(d=>`<label><input type="checkbox" value="${d.id}" ${cur.has(d.id)?'checked':''}> ${esc(d.nom)} <span class="muted small">${kidsOf(d.id,a).length}명</span></label>`).join('')}</div>
  <div class="actions"><button style="margin-right:auto" onclick="closeM();editDon()">＋ 새 후원자</button><button onclick="closeM()">취소</button><button class="primary" onclick="saveLinks('${eid}','${a}')">저장</button></div>`)}
@@ -389,7 +394,7 @@ function vDonateur(){
    ${k.length?(s?`<span class="tag ok">감사카드 보냄 ${fmtD(s)}</span><button class="small" onclick="setSent('${d.id}','${t}','')">취소</button>`:`<button class="small" onclick="setSent('${d.id}','${t}',today())">✓ 감사카드 보냄 표시</button>`):''}
    ${k.length?`<button class="small primary" onclick="UI.cd={don:'${d.id}',ids:null};UI.annee='${t}';go('cartes')">💌 감사카드 만들기</button>`:''}
    <button class="small" onclick="editKids('${d.id}','${t}')">＋ 학생 연결</button></span></div>
-  <div class="kids">${k.map(e=>{const y=Y(e,t);return `<div class="kid" onclick="go('eleve','${e.id}','${t}')">${imgTag(e,'kim')}<div style="min-width:0"><b>${esc(e.nom)}</b><div class="small muted">${esc(y.ecole||'')} ${esc(y.classe||'')}</div><div class="small">${cardDone(e,t)?'':'<span class="tag warn">카드 내용 없음</span>'}</div></div><button class="x" title="연결 끊기" onclick="event.stopPropagation();unlink('${d.id}','${e.id}','${t}')">×</button></div>`}).join('')||'<span class="muted">연결된 학생이 없습니다</span>'}</div>
+  <div class="kids">${k.map(e=>{const y=Y(e,t);return `<div class="kid" onclick="go('eleve','${e.id}')">${imgTag(e,'kim')}<div style="min-width:0"><b>${esc(e.nom)}</b><div class="small muted">${esc(y.ecole||'')} ${esc(y.classe||'')}</div><div class="small">${cardDone(e,t)?'':'<span class="tag warn">카드 내용 없음</span>'}</div></div><button class="x" title="연결 끊기" onclick="event.stopPropagation();unlink('${d.id}','${e.id}','${t}')">×</button></div>`}).join('')||'<span class="muted">연결된 학생이 없습니다</span>'}</div>
  </div>`;
 }
 function setSent(did,a,v){const d=don(did);d.ans[a]=Object.assign(d.ans[a]||{},{carte:v});save(`감사카드 ${v?'보냄':'보냄 취소'}: ${d.nom} (${a})`);render()}
@@ -410,24 +415,24 @@ function editDon(id){const d=id?don(id):{nom:'',type:'개인',contact:'',cycle:'
  <label class="full" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="d_ar" ${d.archive?'checked':''}> 후원이 끝남 (목록에서 숨김)</label></div>
  <div class="actions">${id?`<button class="danger" style="margin-right:auto" onclick="delDon('${id}')">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveDon('${id||''}')">저장</button></div>`)}
 function saveDon(id){const nom=fv('d_nom');if(!nom){alert('이름을 입력해 주세요');return}let d=id?don(id):null;if(!d){d={id:nextId(DB.donateurs,'D'),ans:{}};DB.donateurs.push(d)}
- Object.assign(d,{nom,type:fv('d_ty'),contact:fv('d_ct'),cycle:fv('d_cy'),montant:fv('d_mt')?Number(fv('d_mt')):null,devise:fv('d_dv'),memo:fv('d_memo'),archive:$('#d_ar').checked});save((id?'후원자 수정: ':'새 후원자: ')+nom);closeM();if(!id&&UI.view==='eleve')render();else go('donateur',d.id)}
+ Object.assign(d,{nom,type:fv('d_ty'),contact:fv('d_ct'),cycle:fv('d_cy'),montant:fv('d_mt')?Number(fv('d_mt')):null,devise:fv('d_dv'),memo:fv('d_memo'),archive:$('#d_ar').checked});save((id?'후원자 수정: ':'새 후원자: ')+nom);closeM();if(!id&&(UI.view==='eleve'||UI.view==='statut'))render();else go('donateur',d.id)}
 function delDon(id){const d=don(id);if(!confirm(`${d.nom} 후원자와 모든 연결 기록을 지울까요?\n(후원이 끝난 경우에는 지우지 말고 "후원이 끝남"에 체크하는 것이 좋습니다)`))return;DB.donateurs=DB.donateurs.filter(x=>x.id!==id);DB.liens=DB.liens.filter(l=>l.donateur!==id);save('후원자 삭제: '+d.nom);closeM();go('donateurs')}
 
 /* ---------- 감사카드 (이미지 1500×1000) ---------- */
 function cardList(){const a=A();if(UI.cd.ids)return UI.cd.ids.map(elv).filter(Boolean);if(UI.cd.don)return kidsOf(UI.cd.don,a);return roster(a)}
 function vCartes(){
- const a=A(),L=cardList(),D=activeDons(a),d=UI.cd.don?don(UI.cd.don):null;const miss=L.filter(e=>!cardDone(e,a)||!Y(e,a).photo);
- return hd(`감사카드 <span class="muted" style="font-weight:400;font-size:15px">${a}</span>`,`<button class="primary" onclick="allPNG()" ${L.length?'':'disabled'}>🖼 이미지로 저장 (${L.length}장)</button><button onclick="printCards()" ${L.length?'':'disabled'}>🖨 인쇄</button>`)+
+ const a=A(),L=cardList(),D=activeDons(a),d=UI.cd.don?don(UI.cd.don):null;const miss=L.filter(e=>!cardDone(e,a)||!e.photo);
+ return hd(`감사카드 <select style="font-size:15px;margin-left:6px" onchange="UI.annee=this.value;UI.cd={don:'',ids:null};render()">${annees().map(y=>`<option ${y===a?'selected':''}>${y}</option>`).join('')}</select>`,`<button class="primary" onclick="allPNG()" ${L.length?'':'disabled'}>🖼 이미지로 저장 (${L.length}장)</button><button onclick="printCards()" ${L.length?'':'disabled'}>🖨 인쇄</button>`)+
  `<div class="card"><div class="row">
   <div class="field"><label>누구에게</label><select onchange="UI.cd={don:this.value,ids:null};render()"><option value="">(이름 없이) ${a} 장학생 전체</option>${D.map(x=>`<option value="${x.id}" ${UI.cd.don===x.id?'selected':''}>${esc(x.nom)} — ${kidsOf(x.id,a).length}명${sentOf(x,a)?' ✓':''}</option>`).join('')}</select></div>
   ${UI.cd.ids?`<div><span class="tag vi">선택한 학생 ${L.length}명</span> <button class="small" onclick="UI.cd={don:'',ids:null};render()">해제</button></div>`:''}
   <div class="field" style="flex:1"><label>인사말</label><input value="${esc(DB.settings.cardTitle)}" onchange="DB.settings.cardTitle=this.value;save();render()"></div>
   <div class="field" style="flex:1"><label>아래 문구</label><input value="${esc(DB.settings.cardFooter)}" onchange="DB.settings.cardFooter=this.value;save();render()"></div></div>
-  ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ ${a} 사진이나 장래희망·기도제목이 없는 학생 ${miss.length}명: ${miss.map(e=>`<a href="#" onclick="go('eleve','${e.id}','${a}');return false">${esc(e.nom)}</a>`).join(', ')} — 사진이 없으면 지난 사진이 들어갑니다.</div>`:''}
+  ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ 사진이나 ${a} 비전·기도제목이 없는 학생 ${miss.length}명: ${miss.map(e=>`<a href="#" onclick="go('eleve','${e.id}');return false">${esc(e.nom)}</a>`).join(', ')}</div>`:''}
   ${d?`<div style="margin-top:10px">${sentOf(d,a)?`<span class="tag ok">이 후원자에게 ${fmtD(sentOf(d,a))}에 보냄</span>`:`<button class="small" onclick="setSent('${d.id}','${a}',today())">✓ ${esc(d.nom)}에게 보냄 표시</button>`}</div>`:''}
  </div><div class="cards-pv" id="cpv"></div>`;
 }
-async function drawPreviews(){const box=$('#cpv');if(!box)return;const L=cardList();for(const e of L){if(!$('#cpv'))return;const c=await cardCanvas(e);const w=document.createElement('div');w.className='pv';w.appendChild(c);const r=document.createElement('div');r.className='ptop';r.style.margin='8px 2px 0';r.innerHTML=`<a href="#" class="small" onclick="go('eleve','${e.id}','${A()}');return false"><b>${esc(e.nom)}</b></a><button class="small" onclick="cardPNG('${e.id}')">이미지 저장</button>`;w.appendChild(r);box.appendChild(w)}}
+async function drawPreviews(){const box=$('#cpv');if(!box)return;const L=cardList();for(const e of L){if(!$('#cpv'))return;const c=await cardCanvas(e);const w=document.createElement('div');w.className='pv';w.appendChild(c);const r=document.createElement('div');r.className='ptop';r.style.margin='8px 2px 0';r.innerHTML=`<a href="#" class="small" onclick="go('eleve','${e.id}');return false"><b>${esc(e.nom)}</b></a><button class="small" onclick="cardPNG('${e.id}')">이미지 저장</button>`;w.appendChild(r);box.appendChild(w)}}
 function wrap(ctx,text,maxW){const out=[];String(text||'').split('\n').forEach(par=>{let line='';for(const ch of [...par]){const t=line+ch;if(ctx.measureText(t).width>maxW&&line){const sp=line.lastIndexOf(' ');if(sp>line.length*0.55&&ch!==' '){out.push(line.slice(0,sp));line=line.slice(sp+1)+ch}else{out.push(line);line=ch.trimStart()}}else line=t}out.push(line)});return out}
 function rrect(x,X,Y_,W,H,R){x.beginPath();x.moveTo(X+R,Y_);x.arcTo(X+W,Y_,X+W,Y_+H,R);x.arcTo(X+W,Y_+H,X,Y_+H,R);x.arcTo(X,Y_+H,X,Y_,R);x.arcTo(X,Y_,X+W,Y_,R);x.closePath()}
 async function cardCanvas(e){
@@ -435,7 +440,7 @@ async function cardCanvas(e){
  const F='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif',SC='"Snell Roundhand","Brush Script MT","Segoe Script",cursive',NAVY='#1f2a5a',ORG='#c0602b';
  x.fillStyle='#fdf8ef';x.fillRect(0,0,W,H);
  // 사진
- const px=70,py=70,pw=560,ph=700;const u=await photoURL(e,y.photo?a:null);
+ const px=70,py=70,pw=560,ph=700;const u=await photoURL(e);
  x.save();rrect(x,px,py,pw,ph,28);x.clip();
  if(u){const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u});if(img){const sr=Math.max(pw/img.width,ph/img.height),sw=pw/sr,sh=ph/sr;x.drawImage(img,(img.width-sw)/2,Math.max(0,(img.height-sh)*0.3),sw,sh,px,py,pw,ph)}}
  else{x.fillStyle='#e8e4dc';x.fillRect(px,py,pw,ph);x.fillStyle='#a19a8e';x.font=`34px ${F}`;x.textAlign='center';x.fillText('사진',px+pw/2,py+ph/2)}
@@ -449,7 +454,7 @@ async function cardCanvas(e){
  x.fillStyle='#d8cfbf';x.fillRect(tx+60,330,tw-120,2);
  let ty=400;x.textAlign='left';
  const lab=(t)=>{x.fillStyle=ORG;x.font=`bold 32px ${F}`;x.fillText(t,tx,ty);ty+=50};
- lab('장래희망');x.fillStyle='#222';x.font=`36px ${F}`;wrap(x,y.projet||'',tw).forEach(l=>{x.fillText(l,tx,ty);ty+=50});ty+=26;
+ lab('비전');x.fillStyle='#222';x.font=`36px ${F}`;wrap(x,y.projet||'',tw).forEach(l=>{x.fillText(l,tx,ty);ty+=50});ty+=26;
  lab('기도제목');let fs=34,ll;do{x.font=`${fs}px ${F}`;ll=wrap(x,y.priere||'',tw);if(ty+ll.length*fs*1.5<=H-120)break;fs-=2}while(fs>22);
  x.fillStyle='#222';ll.forEach((l,i)=>x.fillText(l,tx,ty+i*fs*1.5));
  x.textAlign='right';x.font=`28px ${F}`;x.fillStyle='#6b6458';x.fillText(`${s.cardFooter} · ${a}`,W-70,H-60);
@@ -465,11 +470,13 @@ async function printCards(){const L=cardList();let h='';for(let i=0;i<L.length;i
 
 /* ---------- 출력 (흑백) ---------- */
 async function printHTML(html){$('#print').innerHTML=html;await Promise.all([...$('#print').querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));setTimeout(()=>window.print(),80)}
-async function printEleve(id,a){const e=elv(id),u=await photoURL(e,Y(e,a).photo?a:null);const ys=Object.keys(e.ans).sort().reverse().filter(y=>{const r=e.ans[y];return r.classe||r.projet||r.priere});
+async function printEleve(id){const e=elv(id),a=CUR(),y=Y(e,a),u=await photoURL(e);
+ const past=Object.keys(e.ans).filter(x=>x!==a&&(e.ans[x].projet||e.ans[x].priere)).sort().reverse();
  printHTML(`<div class="pg pgb"><div class="sheet-hd">${u?`<img class="pimg" src="${u}">`:'<div class="pimg">사진</div>'}<div style="flex:1"><div class="sheet-title">${esc(e.nom)}</div><div style="margin-bottom:2mm">장학생 자료 · ${a}</div>
- <table><tr><th>성별</th><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td></tr><tr><th>생년월일</th><td>${fmtD(e.naissance)}${e.naissance?` (만 ${age(e.naissance)}세)`:''}</td></tr><tr><th>학교</th><td>${esc(Y(e,a).ecole||curEcole(e))}</td></tr><tr><th>학년 (${a})</th><td>${esc(Y(e,a).classe||'')} ${nivKo(Y(e,a).classe)?`(${nivKo(Y(e,a).classe)})`:''}</td></tr></table></div></div>
+ <table><tr><th>성별</th><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td></tr><tr><th>생년월일</th><td>${fmtD(e.naissance)}${e.naissance?` (만 ${age(e.naissance)}세)`:''}</td></tr><tr><th>학교</th><td>${esc(y.ecole||curEcole(e))}</td></tr><tr><th>학년</th><td>${esc(y.classe||'')} ${nivKo(y.classe)?`(${nivKo(y.classe)})`:''}</td></tr></table></div></div>
  <table style="margin-bottom:5mm"><tr><th>아버지 / 보호자</th><td>${esc(e.pere)}</td></tr><tr><th>어머니 / 보호자</th><td>${esc(e.mere)}</td></tr><tr><th>연락처</th><td>${esc(e.tel)}</td></tr></table>
- ${ys.map(y=>{const r=e.ans[y];return `<table style="margin-bottom:4mm"><tr><th colspan="2" style="width:auto">${y}${r.ecole?' — '+esc(r.ecole):''}${r.classe?' · '+esc(r.classe):''}</th></tr><tr><th>장래희망</th><td>${esc(r.projet)}</td></tr><tr><th>기도제목</th><td>${esc(r.priere)}</td></tr>${r.note?`<tr><th>메모</th><td>${esc(r.note)}</td></tr>`:''}</table>`}).join('')}
+ <table style="margin-bottom:5mm"><tr><th>비전</th><td>${esc(y.projet)}</td></tr><tr><th>기도제목</th><td style="height:22mm">${esc(y.priere)}</td></tr></table>
+ ${past.map(x=>`<table style="margin-bottom:3mm;font-size:11.5px"><tr><th colspan="2" style="width:auto">${x}${e.ans[x].classe?' · '+esc(e.ans[x].classe):''}</th></tr><tr><th>비전</th><td>${esc(e.ans[x].projet||'')}</td></tr><tr><th>기도제목</th><td>${esc(e.ans[x].priere||'')}</td></tr></table>`).join('')}
  <div style="font-size:10.5px;margin-top:6mm">출력일 ${fmtD(today())}</div></div>`)}
 function ficheHTML(e,a){const an=a.replace(/-(\d\d)$/,(m,x)=>'-'+a.slice(0,2)+x),r=Y(e,a);return `<div class="fiche"><div class="ti">Fiche de l'élève boursier</div><div class="an">Année scolaire ${an}</div>
  <div class="l">Nom et prénoms : <b>${esc(e.nom)}</b></div><div class="l"><span style="flex:1">École : <b>${esc(r.ecole||curEcole(e))}</b></span><span style="width:45mm">Classe : <b>${esc(r.classe||'')}</b></span></div>
@@ -490,10 +497,10 @@ function vReglages(){
  <div class="row"><button onclick="pickDir()">📁 폴더 다시 선택</button>${DSTATE==='ok'?'<button onclick="autoBackup(true)">지금 백업</button>':''}<button onclick="download('bourses_sauvegarde_'+today()+'.json',JSON.stringify(DB),'application/json')">백업 파일 내려받기</button><label class="btn">백업에서 복원<input type="file" accept=".json" hidden onchange="restoreBackup(this.files[0])"></label><button onclick="exportCSV()">${A()} 명단 내보내기 (엑셀)</button></div></div>
  <div class="card"><h2>최근 변경 기록</h2><div class="small" style="max-height:280px;overflow:auto">${[...DB.journal].reverse().slice(0,100).map(j=>`<div>${fmtD(j.at)} ${j.at.slice(11,16)} — ${esc(j.msg)}</div>`).join('')}</div></div>`;
 }
-function newYear(na){const a=DB.settings.annee,keep=$('#rk')?.checked;if(!confirm(`${na} 학년도를 시작할까요?`))return;download(`bourses_sauvegarde_avant_${na}_${today()}.json`,JSON.stringify(DB),'application/json');
+function newYear(na){const a=DB.settings.annee,keep=$('#rk')?$('#rk').checked:true;if(!confirm(`${na} 학년도를 시작할까요?`))return;download(`bourses_sauvegarde_avant_${na}_${today()}.json`,JSON.stringify(DB),'application/json');
  roster(a).forEach(e=>{const p=e.ans[a];e.ans[na]={st:'장학생',ecole:p.ecole||'',classe:nextCls(p.classe)}});
  if(keep)DB.liens.filter(l=>l.annee===a).forEach(l=>DB.liens.push({annee:na,eleve:l.eleve,donateur:l.donateur}));
- DB.settings.annees=[...new Set([...DB.settings.annees,na])].sort();DB.settings.annee=na;UI.annee=null;save(`새 학년도 시작: ${na}`);go('home');toast(na+' 학년도 시작')}
+ DB.settings.annees=[...new Set([...DB.settings.annees,na])].sort();DB.settings.annee=na;UI.annee=null;save(`새 학년도 시작: ${na}`);UI.annee=na;go('statut');UI.annee=na;render();toast(na+' 학년도 시작')}
 function exportCSV(){const a=A(),rows=[['이름','성별','생년월일','학교','학년','장래희망','기도제목','아버지/보호자','어머니/보호자','연락처','후원자']];roster(a).forEach(e=>{const y=Y(e,a);rows.push([e.nom,e.sexe,e.naissance,y.ecole||'',y.classe||'',y.projet||'',y.priere||'',e.pere,e.mere,e.tel,donsOf(e.id,a).map(d=>d.nom).join(', ')])});download(`장학생_${a}.csv`,'﻿'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'),'text/csv')}
 function restoreBackup(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.meta?.app!=='bourses')throw 0;if(DB&&!confirm(`이 백업(학생 ${d.eleves.length}명)으로 바꿀까요?`))return;const old=DB?.meta?.rev||0;DB=migrate(d);DB.meta.rev=Math.max(old,DB.meta.rev||0);save('백업에서 복원');render();toast('복원했습니다')}catch(e){alert('장학생 관리 백업 파일이 아닙니다.')}};r.readAsText(file)}
 
