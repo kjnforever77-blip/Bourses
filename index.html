@@ -36,6 +36,8 @@ a.lk{color:var(--accent);cursor:pointer;text-decoration:none}a.lk:hover{text-dec
 table.data{width:100%;border-collapse:collapse;background:#fff}
 table.data th,table.data td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle}
 table.data th{font-size:12px;color:var(--muted);font-weight:600;background:#fafbfc;white-space:nowrap}
+table.notes td,table.notes th{padding:7px 9px}table.notes .c{text-align:center}table.notes td.fin{background:#f6f4fc}.nlow{color:#c2410c}
+.ntab{width:100%;border-collapse:collapse}.ntab th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:4px 6px;white-space:nowrap}.ntab td{padding:3px 4px}.ntab input{width:100%}.ntab tbody tr:last-child th,.ntab tbody tr:last-child td{border-top:1px dashed var(--line);padding-top:8px}
 table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7fc}
 .tag{display:inline-block;padding:1px 9px;border-radius:10px;font-size:12px;background:#eef0f4;margin:1px 3px 1px 0;white-space:nowrap}
 .tag.ok{background:#e3f4ea;color:var(--ok)}.tag.warn{background:#fdf0e1;color:var(--warn)}.tag.bad{background:#fde8e6;color:var(--danger)}.tag.vi{background:var(--accent-soft);color:var(--accent)}
@@ -108,7 +110,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='19 (2026-11-21)';
+const APP_VERSION='20 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -148,7 +150,7 @@ const recs=eid=>DB.histoires.filter(h=>h.enfant===eid).sort((a,b)=>b.date.locale
 const lastCard=eid=>recs(eid).find(h=>h.type==='카드'&&(h.projet||h.priere))||{};
 const lastSent=did=>DB.envois.filter(x=>x.donateur===did).map(x=>x.date).sort().pop()||'';
 function logJ(m){DB.journal.push({at:new Date().toISOString(),msg:m});if(DB.journal.length>800)DB.journal=DB.journal.slice(-800)}
-function emptyDB(){return {meta:{app:'jangak',v:1,rev:0,at:new Date().toISOString()},settings:{cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',cardVerse:'너희가 여기 내 형제 중에 지극히 작은 자 하나에게 한 것이 곧 내게 한 것이니라 (마태복음 25:40)',lastBackup:null},enfants:[],histoires:[],donateurs:[],liens:[],envois:[],journal:[]}}
+function emptyDB(){return {meta:{app:'jangak',v:1,rev:0,at:new Date().toISOString()},settings:{cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',cardVerse:'너희가 여기 내 형제 중에 지극히 작은 자 하나에게 한 것이 곧 내게 한 것이니라 (마태복음 25:40)',lastBackup:null},enfants:[],histoires:[],notes:[],donateurs:[],liens:[],envois:[],journal:[]}}
 function norm(d){const e=emptyDB();for(const k of Object.keys(e))d[k]=d[k]??e[k];d.settings=Object.assign(e.settings,d.settings);return d}
 
 /* ---------- 저장 (브라우저 + 자료 폴더) ---------- */
@@ -308,6 +310,7 @@ function vEnfant(){
   <div style="margin-top:10px"><button class="small ${lc.date?'':'primary'}" onclick="editRec('${e.id}',null,'카드')">✏️ 비전·기도제목 ${lc.date?'새로 입력':'입력'}</button>${lc.date?` <button class="small" onclick="editRec('${e.id}','${lc.id}')">지금 것 고치기</button>`:''}</div>
   <div class="vp" style="grid-template-columns:1fr"><div><div class="k">후원자 <span>(출력물에는 나오지 않음)</span></div><div class="dons">${ds.map(d=>`<span class="dchip" onclick="go('donateur','${d.id}')">${esc(d.nom)} <span class="muted small">${d.lien.debut?syLabel(d.lien.debut).replace('학년도','')+'~':''}</span></span>`).join('')||'<span class="muted small">없음</span>'}<button class="small" onclick="linkFromKid('${e.id}')">＋ 후원자 연결·바꾸기</button></div></div></div>
  </div>
+ ${notesCard(e)}
  <div class="card"><div class="ch"><h2>이야기 기록 <span class="muted small" style="font-weight:400">${R.length}</span></h2><button class="primary small" onclick="editRec('${e.id}')">＋ 기록 추가</button></div>
   ${R.length?`<div class="tl">${R.map(h=>`<div class="ev"><div class="eh"><span class="dt">${fmtD(h.date)}</span><span class="ty ${h.type}">${h.type}</span>${h.type==='진급'&&(h.ecole||h.classe)?`<span class="small">${esc([h.ecole,h.classe].filter(Boolean).join(' · '))}</span>`:''}<span class="acts"><button class="small" onclick="editRec('${e.id}','${h.id}')">수정</button></span></div>
    ${h.projet?`<div class="tx"><span class="muted small">비전</span> ${esc(h.projet)}</div>`:''}${h.priere?`<div class="tx"><span class="muted small">기도제목</span> ${esc(h.priere)}</div>`:''}${h.texte?`<div class="tx">${esc(h.texte)}</div>`:''}
@@ -367,6 +370,54 @@ async function saveRec(eid,hid){
  if(!e.photo){const p=h.fichiers.find(x=>x.dir==='photos');if(p)e.photo=p.f}
  save(`기록 ${hid?'수정':'추가'}: ${e.nom} (${t})`);closeM();render()}
 function delRec(hid){if(!confirm('이 기록을 지울까요? (올린 파일은 폴더에 남습니다)'))return;DB.histoires=DB.histoires.filter(h=>h.id!==hid);save('기록 삭제');closeM();render()}
+/* ---------- 성적 ---------- */
+const TRI=['1학기','2학기','3학기'];
+const notesOf=eid=>(DB.notes||[]).filter(n=>n.enfant===eid).sort((a,b)=>b.an-a.an);
+const num=v=>{v=String(v??'').trim().replace(',','.');return v===''||isNaN(v)?null:+v};
+const fmtM=v=>v==null?'':(Math.round(v*100)/100).toString().replace('.',',');
+function finMoy(n){if(n.fin?.m!=null)return {m:n.fin.m,auto:false};const v=n.t.map(x=>x?.m).filter(x=>x!=null);return v.length?{m:Math.round(v.reduce((s,x)=>s+x,0)/v.length*100)/100,auto:true,cnt:v.length}:{m:null}}
+function rangTx(x,sexe){if(!x?.r)return '';return `${x.r}등${x.n?'/'+x.n+'명':''}`}
+function noteCell(x,sur){if(x?.m==null)return '<span class="muted">—</span>';const low=x.m<sur/2;return `<b class="${low?'nlow':''}">${fmtM(x.m)}</b><span class="muted small">/${sur}</span>${x.r?`<div class="small muted">${rangTx(x)}</div>`:''}`}
+function notesCard(e){const N=notesOf(e.id);
+ return `<div class="card"><div class="ch"><h2>성적 <span class="muted small" style="font-weight:400">${N.length?N.length+'개 학년도':''}</span></h2><button class="primary small" onclick="editNote('${e.id}')">＋ 성적 입력</button></div>
+ ${N.length?`<div style="overflow:auto"><table class="data notes"><thead><tr><th>학년도</th><th>학년</th>${TRI.map(t=>`<th class="c">${t}</th>`).join('')}<th class="c">최종</th><th>결과</th><th></th></tr></thead><tbody>
+ ${N.map(n=>{const f=finMoy(n);return `<tr class="click" onclick="editNote('${e.id}','${n.id}')"><td><b>${n.an}-${n.an+1}</b></td><td>${esc(n.classe)}${n.ecole&&n.ecole!==e.ecole?`<div class="small muted">${esc(n.ecole)}</div>`:''}</td>${n.t.map(x=>`<td class="c">${noteCell(x,n.sur)}</td>`).join('')}
+ <td class="c fin">${f.m==null?'<span class="muted">—</span>':f.auto?`<span class="${f.m<n.sur/2?'nlow':''}">${fmtM(f.m)}</span><span class="muted small">/${n.sur}</span><div class="small muted">${f.cnt}개 학기 평균</div>`:noteCell(n.fin,n.sur)}</td>
+ <td>${n.dec?`<span class="tag ${n.dec==='유급'?'warn':'ok'}">${esc(n.dec)}</span>`:''}${n.memo?`<div class="small muted">${esc(n.memo)}</div>`:''}</td><td onclick="event.stopPropagation()">${(n.fichiers||[]).map(x=>`<button class="small" title="성적표 보기" onclick="openFile('${x.dir}','${esc(x.f)}')">📄</button>`).join('')}</td></tr>`}).join('')}
+ </tbody></table></div>`:'<div class="empty">아직 성적이 없습니다. 학년도마다 1·2·3학기와 최종 성적을 넣을 수 있어요.</div>'}</div>`}
+function editNote(eid,nid_){const e=kid(eid);DB.notes=DB.notes||[];
+ const used=new Set(notesOf(eid).map(n=>n.an));let an=syOf(today());if(!nid_)while(used.has(an))an--;
+ const n=nid_?DB.notes.find(x=>x.id===nid_):{an,ecole:e.ecole,classe:an===syOf(today())?e.classe:'',sur:10,t:[{},{},{}],fin:{},dec:'',memo:'',fichiers:[]};
+ const cur=syOf(today());let yo='';for(let y=cur;y>=cur-12;y--)yo+=`<option value="${y}" ${y===n.an?'selected':''}>${y}-${y+1}학년도</option>`;
+ const row=(k,lab,x)=>`<tr><th>${lab}</th><td><input id="n_m${k}" inputmode="decimal" value="${fmtM(x?.m)}" placeholder="평균"></td><td><input id="n_r${k}" inputmode="numeric" value="${x?.r??''}" placeholder="등수"></td><td><input id="n_n${k}" inputmode="numeric" value="${x?.n??''}" placeholder="학생 수"></td></tr>`;
+ modal(`<h3>${esc(e.nom)} — 성적 ${nid_?'수정':'입력'}</h3><div class="form-grid">
+ <div class="field"><label>학년도</label><select id="n_an">${yo}</select></div>
+ <div class="field"><label>만점</label><select id="n_sur"><option value="10" ${n.sur==10?'selected':''}>10점 (초등)</option><option value="20" ${n.sur==20?'selected':''}>20점 (중·고등)</option></select></div>
+ <div class="field"></div>
+ <div class="field"><label>학교</label><input id="n_ec" list="ecs" value="${esc(n.ecole)}">${ecoleList()}</div>
+ <div class="field"><label>학년</label><input id="n_cl" list="cls" value="${esc(n.classe)}">${clsList()}</div>
+ <div class="field"></div>
+ <div class="full"><table class="ntab"><thead><tr><th></th><th>평균</th><th>등수</th><th>반 학생 수</th></tr></thead><tbody>
+ ${TRI.map((t,k)=>row(k,t,n.t[k])).join('')}${row('f','최종 (연간)',n.fin)}</tbody></table>
+ <div class="small muted" style="margin-top:4px">최종 평균을 비워 두면 입력한 학기의 평균으로 자동 계산해 보여 줍니다. 소수점은 , 나 . 모두 됩니다.</div></div>
+ <div class="field"><label>결과</label><input id="n_dec" list="decs" value="${esc(n.dec)}"><datalist id="decs"><option>진급</option><option>유급</option><option>졸업</option><option>시험 합격</option><option>시험 불합격</option></datalist></div>
+ <div class="field" style="grid-column:span 2"><label>메모</label><input id="n_memo" value="${esc(n.memo)}" placeholder="예: CEP 합격, 수학이 약함"></div>
+ <div class="field full"><label>성적표 사진·파일 ${n.fichiers?.length?`(지금 ${n.fichiers.length}개 — 더 올리면 추가됨)`:''}</label><input id="n_fi" type="file" multiple accept="image/*,.pdf"></div>
+ </div>
+ <div class="actions">${nid_?`<button class="danger" style="margin-right:auto" onclick="delNote('${nid_}')">삭제</button>`:''}<button onclick="closeM()">취소</button><button class="primary" onclick="saveNote('${eid}','${nid_||''}')">저장</button></div>`)}
+async function saveNote(eid,nid_){const e=kid(eid),an=+fv('n_an'),files=$('#n_fi').files;
+ const dup=notesOf(eid).find(x=>x.an===an&&x.id!==nid_);if(dup){alert(`${an}-${an+1}학년도 성적이 이미 있습니다. 그 줄을 눌러 고쳐 주세요.`);return}
+ if(files.length&&!needDir())return;
+ const rd=k=>{const r=num(fv('n_r'+k)),n=num(fv('n_n'+k)),m=num(fv('n_m'+k));const o={};if(m!=null)o.m=m;if(r!=null)o.r=r;if(n!=null)o.n=n;return o};
+ const sur=+fv('n_sur'),t=[0,1,2].map(rd),fin=rd('f');
+ const bad=[...t,fin].find(x=>x.m!=null&&(x.m<0||x.m>sur));if(bad){alert(`평균은 0에서 ${sur} 사이여야 합니다 (${fmtM(bad.m)}).`);return}
+ let n=nid_?DB.notes.find(x=>x.id===nid_):null;if(!n){n={id:nid(DB.notes,'N'),enfant:eid,fichiers:[]};DB.notes.push(n)}
+ Object.assign(n,{an,sur,ecole:fv('n_ec'),classe:fv('n_cl'),t,fin,dec:fv('n_dec'),memo:fv('n_memo')});
+ if(files.length){try{n.fichiers=(n.fichiers||[]).concat(await storeFiles(eid,files))}catch(x){alert(x.message)}}
+ save(`성적 ${nid_?'수정':'입력'}: ${e.nom} ${an}-${an+1}`);closeM();render()}
+function delNote(id){if(!confirm('이 학년도 성적을 지울까요?'))return;DB.notes=DB.notes.filter(n=>n.id!==id);save('성적 삭제');closeM();render()}
+function notesPrint(e){const N=notesOf(e.id);if(!N.length)return '';const c=(x,s)=>x?.m==null?'':`${fmtM(x.m)}/${s}${x.r?` (${rangTx(x)})`:''}`;
+ return `<table style="margin-top:5mm"><tr><th>학년도</th><th>학년</th>${TRI.map(t=>`<th>${t}</th>`).join('')}<th>최종</th><th>결과</th></tr>${N.map(n=>{const f=finMoy(n);return `<tr><td>${n.an}-${n.an+1}</td><td>${esc(n.classe)}</td>${n.t.map(x=>`<td>${c(x,n.sur)}</td>`).join('')}<td>${f.m==null?'':f.auto?fmtM(f.m)+'/'+n.sur:c(n.fin,n.sur)}</td><td>${esc(n.dec)}</td></tr>`}).join('')}</table>`}
 function linkFromKid(eid){const e=kid(eid),cur=new Set(donsOf(eid).map(d=>d.id));const L=DB.donateurs.filter(d=>isOn(d)||cur.has(d.id)).sort((a,b)=>cur.has(b.id)-cur.has(a.id)||cmpKo(a,b));
  modal(`<h3>${esc(e.nom)} — 후원자</h3><p class="small muted" style="margin:-6px 0 10px">체크하면 연결되고, 체크를 풀면 빠집니다. 지금 연결된 후원자가 맨 위에 있습니다.</p>
  <div class="field" style="margin-bottom:10px;max-width:240px"><label>새로 연결할 때 시작 학년도</label>${sySelect('l_db',today())}</div>
@@ -502,6 +553,7 @@ async function printEnfant(id){const e=kid(id),u=await photoURL(e),lc=lastCard(i
  <table><tr><th>생년월일</th><td>${fmtD(e.naissance)}${e.naissance?` (만 ${age(e.naissance)}세)`:''}</td></tr><tr><th>성별</th><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td></tr><tr><th>학교</th><td>${esc(e.ecole)}</td></tr><tr><th>학년</th><td>${esc(e.classe)} ${nivKo(e.classe)?`(${nivKo(e.classe)})`:''}</td></tr></table></div></div>
  <table style="margin-bottom:5mm"><tr><th>아버지 / 보호자</th><td>${esc(e.pere)}</td></tr><tr><th>어머니 / 보호자</th><td>${esc(e.mere)}</td></tr><tr><th>연락처</th><td>${esc(e.tel)}</td></tr></table>
  <table><tr><th>비전</th><td>${esc(lc.projet||'')}</td></tr><tr><th>기도제목</th><td style="height:24mm">${esc(lc.priere||'')}</td></tr></table>
+ ${notesPrint(e)}
  <div style="font-size:10.5px;margin-top:6mm">출력일 ${fmtD(today())}</div></div>`)}
 function ficheHTML(e){return `<div class="fiche"><div class="ti">Fiche de l'élève boursier</div><div class="an">Année scolaire ${schoolYear()}</div>
  <div class="l">Nom et prénoms : <b>${esc(e.nom)}</b></div><div class="l"><span style="flex:1">École : <b>${esc(e.ecole)}</b></span><span style="width:45mm">Classe : <b>${esc(e.classe)}</b></span></div>
