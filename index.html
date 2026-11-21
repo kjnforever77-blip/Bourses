@@ -68,6 +68,8 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
 .kid{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
 .kid .kim{width:52px;height:64px;border-radius:7px;object-fit:cover;flex:none;display:flex;cursor:pointer}
 /* 모달 */
+.lt{display:block;width:58px;height:58px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px var(--line);background:#e9ebf1}.lt img.lthumb{width:104px;height:auto;margin:-2px 0 0 -23px;display:block}.lt .ph{width:58px;height:58px;font-size:9px}
+#hov{position:fixed;z-index:70;pointer-events:none;background:#fff;padding:6px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.25);display:none}#hov img{width:240px;height:300px;object-fit:cover;border-radius:8px;display:block}
 .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:30px 10px;overflow:auto;z-index:50}
 .modal{background:#fff;border-radius:12px;padding:20px 22px;width:min(700px,100%);box-shadow:0 10px 40px rgba(0,0,0,.25)}.modal h3{font-size:17px;margin:0 0 14px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}.form-grid .full{grid-column:1/-1}
@@ -102,7 +104,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='17 (2026-11-21)';
+const APP_VERSION='18 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -234,8 +236,8 @@ function vEnfants(){
  (OLD_HAS&&!DB.enfants.length?`<div class="banner info">이 폴더에 이전에 쓰던 자료 파일이 있습니다. 필요하면 <b>설정 › 이전 자료 가져오기</b>로 옮겨 올 수 있어요.</div>`:'')+
  `<div class="card"><div class="row"><div class="field"><label>보기</label><select onchange="UI.f.s=this.value;render()">${[['on',`장학 중 (${on})`],['nodon',`후원자 없는 장학생 (${DB.enfants.filter(e=>isOn(e)&&!donsOf(e.id).length).length})`],['off',`장학 끝남 (${DB.enfants.length-on})`],['all','전체']].map(([v,l])=>`<option value="${v}" ${f.s===v?'selected':''}>${l}</option>`).join('')}</select></div>
  <div class="field" style="flex:1"><label>찾기 (이름·부모·전화·학교)</label><input id="q" value="${esc(f.q)}" oninput="UI.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{render();const i=$('#q');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)"></div></div></div>
- <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th>이름</th><th>생년월일</th><th>나이</th><th>성별</th><th>학교 · 학년</th><th>후원자</th></tr></thead><tbody>
- ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td><b>${esc(e.nom)}</b>${!isOn(e)?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${[esc(e.ecole),esc(e.classe)].filter(Boolean).join(' · ')}</td><td onclick="event.stopPropagation()">${!isOn(e)?'':`${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||'<span class="tag warn">없음</span>'}<button class="small" style="padding:0 8px;margin-left:2px" title="후원자 연결·바꾸기" onclick="linkFromKid('${e.id}')">${donsOf(e.id).length?'✏️':'＋'}</button>`}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">${DB.enfants.length?'찾는 장학생이 없습니다':'아직 장학생이 없습니다. "＋ 새 장학생"으로 시작하세요.'}</td></tr>`}
+ <div class="card" style="padding:0;overflow:auto"><table class="data"><thead><tr><th style="width:70px"></th><th>이름</th><th>생년월일</th><th>나이</th><th>성별</th><th>학교 · 학년</th><th>후원자</th></tr></thead><tbody>
+ ${L.map(e=>{const n=donsOf(e.id).length;return `<tr class="click" onclick="go('enfant','${e.id}')"><td style="padding:5px 6px 5px 10px"><span class="lt">${imgTag(e,'lthumb')}</span></td><td><b>${esc(e.nom)}</b>${!isOn(e)?' <span class="tag">끝남</span>':''}</td><td>${fmtD(e.naissance)||'<span class="muted">—</span>'}</td><td>${e.naissance?age(e.naissance)+'세':''}</td><td>${e.sexe==='F'?'여':e.sexe==='M'?'남':''}</td><td>${[esc(e.ecole),esc(e.classe)].filter(Boolean).join(' · ')}</td><td onclick="event.stopPropagation()">${!isOn(e)?'':`${donsOf(e.id).map(d=>`<span class="tag vi">${esc(d.nom)}</span>`).join('')||'<span class="tag warn">없음</span>'}<button class="small" style="padding:0 8px;margin-left:2px" title="후원자 연결·바꾸기" onclick="linkFromKid('${e.id}')">${donsOf(e.id).length?'✏️':'＋'}</button>`}</td></tr>`}).join('')||`<tr><td colspan="7" class="empty">${DB.enfants.length?'찾는 장학생이 없습니다':'아직 장학생이 없습니다. "＋ 새 장학생"으로 시작하세요.'}</td></tr>`}
  </tbody></table></div>`;
 }
 function vEnfant(){
@@ -501,6 +503,8 @@ async function importOld(){
  Object.values(dmap).forEach(id=>{const d=don(id);if(!d.fin&&!liensOn().some(l=>l.donateur===id)){const ends=DB.liens.filter(l=>l.donateur===id).map(l=>l.fin).sort();d.fin=ends.at(-1)||today()}});
  save(`이전 자료 가져옴: 장학생 ${nE}, 후원자 ${nD}, 연결 ${nL}, 기록 ${nH}`);render();alert(`가져왔습니다.\n장학생 ${nE}명 · 후원자 ${nD}명 · 후원 연결 ${nL}건 · 기록 ${nH}건`)}
 
+/* 목록 사진에 마우스를 올리면 크게 */
+document.addEventListener('mouseover',ev=>{const t=ev.target;const h=$('#hov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'hov',innerHTML:'<img>'}));if(t.matches&&t.matches('img.lthumb')&&t.src){h.firstChild.src=t.src;const r=t.getBoundingClientRect();h.style.left=(r.right+12)+'px';h.style.top=Math.max(8,Math.min(window.innerHeight-320,r.top-120))+'px';h.style.display='block'}else h.style.display='none'});
 /* ---------- 시작 ---------- */
 (async()=>{
  try{const t=localStorage.getItem(KEY);if(t)DB=norm(JSON.parse(t))}catch(e){}
