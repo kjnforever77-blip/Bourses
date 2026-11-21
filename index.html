@@ -46,7 +46,11 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
 .empty{padding:28px;text-align:center;color:var(--muted)}
 /* 아이 페이지 */
 .prof{display:flex;gap:24px;align-items:flex-start}
-.pphoto{width:170px;height:215px;object-fit:cover;border-radius:12px;display:flex;flex:none}
+.pphoto{width:170px;height:215px;object-fit:cover;border-radius:12px;display:flex;flex:none}.pwrap{position:relative;cursor:pointer;flex:none;align-self:flex-start}.pwrap .pedit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(15,23,42,.72);color:#fff;font-size:12px;padding:3px 10px;border-radius:20px;opacity:0;transition:.15s;white-space:nowrap}.pwrap:hover .pedit{opacity:1}
+.pev{position:relative;width:320px;height:400px;border-radius:10px;overflow:hidden;cursor:grab;touch-action:none;flex:none;box-shadow:0 0 0 1px var(--line)}.pev:active{cursor:grabbing}.pev canvas{width:320px;height:400px;display:block}
+.peo{position:absolute;left:2%;top:0;width:96%;height:100%;border:2px dashed rgba(255,255,255,.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.pec2{position:absolute;left:22%;top:1.5%;width:56%;aspect-ratio:1;border:2px dotted rgba(255,214,0,.95);border-radius:50%;pointer-events:none}
+.pgal{display:flex;flex-wrap:wrap;gap:10px}.pg{position:relative}.pg img{width:96px;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;display:block;box-shadow:0 0 0 1px var(--line)}.pg.on img{box-shadow:0 0 0 3px #6d4fc2}.pg button{position:absolute;right:4px;bottom:4px;padding:0 6px}
 .pinfo{flex:1;min-width:0}
 .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 18px;margin-top:14px}.pgrid .w3{grid-column:1/-1}
 .vp{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
@@ -104,7 +108,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='18 (2026-11-21)';
+const APP_VERSION='19 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -207,8 +211,51 @@ async function storeFiles(eid,files){const out=[];let n=0;for(const file of file
 async function openFile(dir,f){const u=await fileURL(dir,f);if(!u){alert('파일을 열 수 없습니다. 폴더 연결을 확인해 주세요.');return}
  if(!isImg(f)){window.open(u,'_blank');return}
  const e=UI.view==='enfant'?kid(UI.id):null;
- modal(`<div style="text-align:center"><img src="${u}" style="max-width:100%;max-height:72vh;border-radius:8px"></div><div class="actions">${e&&dir==='photos'?(e.photo===f?'<span class="tag ok">대표 사진</span>':`<button onclick="setPhoto('${e.id}','${f}')">대표 사진으로</button>`):''}<button onclick="window.open('${u}','_blank')">크게 보기</button><button class="primary" onclick="closeM()">닫기</button></div>`)}
+ modal(`<div style="text-align:center"><img src="${u}" style="max-width:100%;max-height:72vh;border-radius:8px"></div><div class="actions">${e&&dir==='photos'?(e.photo===f?'<span class="tag ok">대표 사진</span>':`<button onclick="setPhoto('${e.id}','${f}')">대표 사진으로</button>`)+`<button onclick="closeM();photoEdit('${e.id}','${f}')">✂️ 편집해서 대표로</button>`:''}<button onclick="window.open('${u}','_blank')">크게 보기</button><button class="primary" onclick="closeM()">닫기</button></div>`)}
 function setPhoto(eid,f){const e=kid(eid);e.photo=f;save(`대표 사진: ${e.nom}`);closeM();render()}
+// ---- 사진 편집 ----
+const PEW=320,PEH=400;let PE=null;
+const kidPhotos=eid=>{const s=[];const e=kid(eid);recs(eid).forEach(h=>(h.fichiers||[]).forEach(x=>{if(x.dir==='photos'&&isImg(x.f)&&!s.includes(x.f))s.push(x.f)}));if(e.photo&&!s.includes(e.photo))s.unshift(e.photo);return s};
+function photoMenu(eid){if(!needDir())return;const e=kid(eid),ps=kidPhotos(eid);
+ const bg=modal(`<h3>대표 사진 — ${esc(e.nom)}</h3>
+ <div class="actions" style="justify-content:flex-start;margin:0 0 14px">${e.photo?`<button class="primary" onclick="closeM();photoEdit('${eid}','${esc(e.photo)}')">✂️ 지금 사진 편집</button>`:''}<label class="btn" style="cursor:pointer"><span>📷 새 사진 올리기</span><input type="file" accept="image/*" hidden onchange="const fs=this.files;closeM();newPhoto('${eid}',fs)"></label></div>
+ ${ps.length>1?`<div class="small muted" style="margin-bottom:6px">다른 사진을 대표로 고르기</div><div class="pgal">${ps.map(f=>`<div class="pg${f===e.photo?' on':''}"><img data-f="photos|${esc(f)}" style="visibility:hidden" onclick="setPhoto('${eid}','${esc(f)}')" title="대표 사진으로"><button class="small" title="이 사진 편집" onclick="closeM();photoEdit('${eid}','${esc(f)}')">✂️</button></div>`).join('')}</div>`:''}
+ <div class="actions"><button onclick="closeM()">닫기</button></div>`);
+ fillImgs(bg).then(()=>bg.querySelectorAll('.pg img').forEach(i=>{if(i.style.visibility==='hidden')i.parentElement.remove()}))}
+async function photoEdit(eid,f){const u=await fileURL('photos',f);if(!u){alert('사진을 열 수 없습니다.');return}
+ const img=new Image();img.src=u;try{await img.decode()}catch(e){alert('사진을 읽을 수 없습니다.');return}
+ PE={eid,f,img,rot:0,z:1,ox:0,oy:0};
+ const bg=modal(`<h3>사진 편집 — ${esc(kid(eid).nom)}</h3>
+ <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+  <div class="pev" id="pev"><canvas id="pec" width="${PEW*2}" height="${PEH*2}"></canvas><div class="peo"></div><div class="pec2"></div></div>
+  <div style="flex:1;min-width:200px">
+   <p class="small muted" style="margin-top:0">사진을 끌어서 위치를 옮기고, 스크롤이나 슬라이더로 크기를 조절하세요.<br>점선 타원 = 감사카드, 점선 원 = 목록 사진</p>
+   <div class="k small">확대 · 축소</div><input type="range" id="pez" min="0.6" max="4" step="0.01" value="1" style="width:100%" oninput="PE.z=+this.value;peDraw()">
+   <div class="actions" style="justify-content:flex-start;margin-top:10px"><button onclick="peRot(-1)">⟲ 왼쪽</button><button onclick="peRot(1)">⟳ 오른쪽</button><button onclick="Object.assign(PE,{rot:0,z:1,ox:0,oy:0});peDraw()">처음대로</button></div>
+   <p class="small muted">원본 사진은 그대로 두고, 편집한 사진을 새로 저장해 대표 사진으로 씁니다.</p>
+  </div></div>
+ <div class="actions"><button onclick="closeM()">취소</button><button class="primary" onclick="peSave()">저장</button></div>`);
+ const v=bg.querySelector('#pev');let d=null;
+ v.addEventListener('pointerdown',ev=>{d={x:ev.clientX,y:ev.clientY,ox:PE.ox,oy:PE.oy};v.setPointerCapture(ev.pointerId)});
+ v.addEventListener('pointermove',ev=>{if(!d)return;PE.ox=d.ox+ev.clientX-d.x;PE.oy=d.oy+ev.clientY-d.y;peDraw()});
+ v.addEventListener('pointerup',()=>d=null);v.addEventListener('pointercancel',()=>d=null);
+ v.addEventListener('wheel',ev=>{ev.preventDefault();PE.z=Math.min(4,Math.max(.6,PE.z*Math.exp(-ev.deltaY*.0015)));bg.querySelector('#pez').value=PE.z;peDraw()},{passive:false});
+ peDraw()}
+function peRot(s){PE.rot=(PE.rot+s+4)%4;[PE.ox,PE.oy]=s>0?[-PE.oy,PE.ox]:[PE.oy,-PE.ox];peDraw()}
+function peGeo(){const iw=PE.img.naturalWidth,ih=PE.img.naturalHeight,rw=PE.rot%2?ih:iw,rh=PE.rot%2?iw:ih,c0=Math.max(PEW/rw,PEH/rh),sc=c0*PE.z;
+ const mx=Math.abs(rw*sc-PEW)/2,my=Math.abs(rh*sc-PEH)/2;PE.ox=Math.max(-mx,Math.min(mx,PE.ox));PE.oy=Math.max(-my,Math.min(my,PE.oy));return {iw,ih,rw,rh,c0,sc}}
+function peRender(x,W,H){const g=peGeo(),k=W/PEW,img=PE.img;
+ x.fillStyle='#e9ebf1';x.fillRect(0,0,W,H);
+ const sub=()=>{x.translate(W/2,H/2);x.rotate(PE.rot*Math.PI/2)};
+ if(PE.z<1){x.save();x.filter=`blur(${Math.round(14*k)}px)`;sub();const s=g.c0*1.1*k;x.drawImage(img,-g.iw*s/2,-g.ih*s/2,g.iw*s,g.ih*s);x.restore()}
+ x.save();x.translate(W/2+PE.ox*k,H/2+PE.oy*k);x.rotate(PE.rot*Math.PI/2);const s=g.sc*k;x.drawImage(img,-g.iw*s/2,-g.ih*s/2,g.iw*s,g.ih*s);x.restore()}
+function peDraw(){const c=document.getElementById('pec');if(c)peRender(c.getContext('2d'),c.width,c.height)}
+async function peSave(){const e=kid(PE.eid),c=document.createElement('canvas');c.width=800;c.height=1000;peRender(c.getContext('2d'),800,1000);
+ const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.9));if(!b){alert('사진 저장 실패');return}
+ const f=`${e.id}_${Date.now()}_e.jpg`;try{await saveSub('photos',f,b)}catch(err){alert('사진을 저장할 수 없습니다: '+err.message);return}
+ const h=DB.histoires.find(h=>h.enfant===e.id&&(h.fichiers||[]).some(x=>x.dir==='photos'&&x.f===PE.f));
+ if(h)h.fichiers.push({dir:'photos',f});else DB.histoires.push({id:nid(DB.histoires,'H'),enfant:e.id,date:today(),type:'사진',texte:'편집한 사진',fichiers:[{dir:'photos',f}]});
+ e.photo=f;PE=null;save(`사진 편집: ${e.nom}`);closeM();render()}
 const fileThumbs=fs=>(fs||[]).map(x=>isImg(x.f)?`<img class="fi" data-f="${x.dir}|${esc(x.f)}" style="visibility:hidden" onclick="openFile('${x.dir}','${esc(x.f)}')">`:`<div class="fdoc" onclick="openFile('${x.dir}','${esc(x.f)}')">📄<span>${esc(x.nom||x.f)}</span></div>`).join('');
 
 /* ---------- 화면 틀 ---------- */
@@ -247,7 +294,7 @@ function vEnfant(){
  return `<div class="hd"><div class="hp"><button onclick="go('enfants')">← 장학생</button><button ${prev?'':'disabled'} onclick="go('enfant','${prev?.id||''}')">◀</button><button ${next?'':'disabled'} onclick="go('enfant','${next?.id||''}')">▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
  <div class="hp"><button onclick="UI.cd={don:'',ids:['${e.id}']};go('envoi')">💌 감사카드</button><button onclick="printEnfant('${e.id}')">🖨 출력</button><button onclick="editEnfant('${e.id}')">✏️ 정보 수정</button></div></div>
  <div class="card"><div class="prof">
-  <label style="cursor:pointer" title="대표 사진 바꾸기">${imgTag(e,'pphoto')}<input type="file" accept="image/*" hidden onchange="newPhoto('${e.id}',this.files)"></label>
+  <div class="pwrap" title="사진 편집 · 바꾸기" onclick="photoMenu('${e.id}')">${imgTag(e,'pphoto')}<span class="pedit">✂️ 편집</span></div>
   <div class="pinfo">
    <div class="ch" style="margin:0"><h1 style="font-size:25px">${esc(e.nom)}</h1>${!isOn(e)?`<span class="tag">장학 끝남 · ${syLabel(e.fin)}까지</span>`:`<span class="tag ok">장학 중${e.debut?' · '+syLabel(e.debut)+'부터':''}${e.fin?' · '+syLabel(e.fin)+'까지':''}</span>`}</div>
    <div class="pgrid">
