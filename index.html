@@ -102,7 +102,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='15 (2026-11-21)';
+const APP_VERSION='16 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -142,7 +142,7 @@ const recs=eid=>DB.histoires.filter(h=>h.enfant===eid).sort((a,b)=>b.date.locale
 const lastCard=eid=>recs(eid).find(h=>h.type==='카드'&&(h.projet||h.priere))||{};
 const lastSent=did=>DB.envois.filter(x=>x.donateur===did).map(x=>x.date).sort().pop()||'';
 function logJ(m){DB.journal.push({at:new Date().toISOString(),msg:m});if(DB.journal.length>800)DB.journal=DB.journal.slice(-800)}
-function emptyDB(){return {meta:{app:'jangak',v:1,rev:0,at:new Date().toISOString()},settings:{cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',lastBackup:null},enfants:[],histoires:[],donateurs:[],liens:[],envois:[],journal:[]}}
+function emptyDB(){return {meta:{app:'jangak',v:1,rev:0,at:new Date().toISOString()},settings:{cardTitle:'후원해 주셔서 감사합니다',cardFooter:'부르키나파소 보보디울라소에서',cardVerse:'너희가 여기 내 형제 중에 지극히 작은 자 하나에게 한 것이 곧 내게 한 것이니라 (마태복음 25:40)',lastBackup:null},enfants:[],histoires:[],donateurs:[],liens:[],envois:[],journal:[]}}
 function norm(d){const e=emptyDB();for(const k of Object.keys(e))d[k]=d[k]??e[k];d.settings=Object.assign(e.settings,d.settings);return d}
 
 /* ---------- 저장 (브라우저 + 자료 폴더) ---------- */
@@ -388,7 +388,8 @@ function vEnvoi(){
   ${UI.cd.ids?`<div><span class="tag vi">${esc(L.map(e=>e.nom).join(', '))}</span> <button class="small" onclick="UI.cd={don:'',ids:null};render()">해제</button></div>`:''}
   <label style="display:flex;gap:6px;align-items:center;padding-bottom:8px"><input type="checkbox" ${DB.settings.cardDonorName!==false?'checked':''} onchange="DB.settings.cardDonorName=this.checked;save();render()"> 카드에 후원자 이름 넣기</label>
   <div class="field" style="flex:1"><label>인사말</label><input value="${esc(DB.settings.cardTitle)}" onchange="DB.settings.cardTitle=this.value;save();render()"></div>
-  <div class="field" style="flex:1"><label>아래 문구</label><input value="${esc(DB.settings.cardFooter)}" onchange="DB.settings.cardFooter=this.value;save();render()"></div></div>
+  <div class="field" style="flex:1"><label>아래 문구</label><input value="${esc(DB.settings.cardFooter)}" onchange="DB.settings.cardFooter=this.value;save();render()"></div>
+  <div class="field" style="flex-basis:100%"><label>성경 구절 (비우면 안 나옴)</label><input value="${esc(DB.settings.cardVerse||'')}" onchange="DB.settings.cardVerse=this.value;save();render()"></div></div>
   ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ 사진이나 기도제목이 없는 장학생: ${miss.map(e=>`<a class="lk" onclick="go('enfant','${e.id}')">${esc(e.nom)}</a>`).join(', ')}</div>`:''}
   ${L.length?`<div class="row" style="margin-top:12px"><button class="primary" onclick="allPNG()">🖼 카드 ${L.length}장 이미지로 저장</button><button onclick="printCards()">🖨 인쇄</button>${d?`<button onclick="recEnvoi('${d.id}',today(),'감사카드')">✓ 보냄으로 기록</button>${lastSent(d.id)?`<span class="small muted">마지막: ${fmtD(lastSent(d.id))}</span>`:''}`:''}</div>`:''}
  </div><div class="cards-pv" id="cpv"></div>`}
@@ -414,7 +415,8 @@ async function cardCanvas(e){
  else{x.fillStyle='#e6e1d6';x.fillRect(px,py,pw,ph);x.fillStyle='#9a9286';x.font=`32px ${F}`;x.fillText('사진',px+pw/2,py+ph/2)}
  x.restore();
  // 사진 아래: 이름·생년월일·성별·학교
- const cx=px+pw/2;let y=py+ph+80;
+ const cx=px+pw/2;let y=py+ph+62;
+ {const t=`${schoolYear()}학년도 장학생`;x.font=`bold 24px ${F}`;const tw2=x.measureText(t).width+36;x.fillStyle=GOLD;rrect(x,cx-tw2/2,y-30,tw2,42,21);x.fill();x.fillStyle='#fff';x.fillText(t,cx,y);y+=70}
  x.fillStyle=INK;let nfs=46;x.font=`bold ${nfs}px ${F}`;while(x.measureText(e.nom).width>pw+70&&nfs>34){nfs-=2;x.font=`bold ${nfs}px ${F}`}
  if(x.measureText(e.nom).width>pw+70){const ws=e.nom.split(' ');let a=ws.slice(0,-1).join(' '),b=ws.at(-1);x.fillText(a,cx,y);y+=nfs+6;x.fillText(b,cx,y)}else x.fillText(e.nom,cx,y);
  y+=58;x.font=`30px ${F}`;x.fillStyle=SUB;
@@ -428,9 +430,11 @@ async function cardCanvas(e){
  const label=(t,Y)=>{x.fillStyle=NAVY;x.font=`bold 30px ${F}`;x.fillText(t,bx+34,Y)};
  // 비전
  x.font=`38px ${F}`;const pl=wrap(x,lc.projet||'—',bw-70).slice(0,2);const vh=70+pl.length*52+20;box(300,vh);label('✦ 나의 비전',300+50);x.fillStyle=INK;x.font=`bold 38px ${F}`;pl.forEach((l,i)=>x.fillText(l,bx+34,300+104+i*52));
- // 기도제목
- const py2=300+vh+28,maxH=H-110-py2;let fs=33,ll;do{x.font=`${fs}px ${F}`;ll=wrap(x,lc.priere||'—',bw-70);if(70+ll.length*fs*1.5+24<=maxH)break;fs-=2}while(fs>21);
- const ph2=Math.min(maxH,70+ll.length*fs*1.5+24);box(py2,ph2);label('🙏 기도제목',py2+50);x.fillStyle=INK;x.font=`${fs}px ${F}`;ll.forEach((l,i)=>x.fillText(l,bx+34,py2+100+i*fs*1.5));
+ // 기도제목: 아래까지 채우고 글씨는 길이에 맞춰
+ const py2=300+vh+28,bottom=s.cardVerse?H-178:H-110,maxH=bottom-py2;let fs=48,ll;do{x.font=`${fs}px ${F}`;ll=wrap(x,lc.priere||'—',bw-70);if(100+ll.length*fs*1.55<=maxH)break;fs-=2}while(fs>22);
+ box(py2,maxH);label('🙏 기도제목',py2+50);x.fillStyle=INK;x.font=`${fs}px ${F}`;const ty0=py2+82+fs*0.9;ll.forEach((l,i)=>x.fillText(l,bx+34,ty0+i*fs*1.55));
+ // 성경 구절
+ if(s.cardVerse){x.font=`italic 24px ${F}`;x.fillStyle=SUB;let v=s.cardVerse;const vl=wrap(x,v,bw).slice(0,2);vl.forEach((l,i)=>x.fillText(l,bx+6,H-(vl.length===2?128:108)+i*32))}
  // 아래
  x.fillStyle=GOLD;x.fillRect(70,H-70,W-140,2);x.font=`26px ${F}`;x.fillStyle=SUB;x.textAlign='right';x.fillText(s.cardFooter,W-70,H-30);
  return c}
