@@ -92,7 +92,8 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
 .sheet-hd{display:flex;gap:7mm;align-items:flex-start;margin-bottom:6mm}.sheet-hd .pimg{width:35mm;height:45mm;object-fit:cover;border:1px solid #000;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px}
 .sheet-title{font-size:18px;font-weight:bold;margin:0 0 2mm}
 .prc{width:180mm;height:122mm;border:1px solid #000;margin:0 auto 6mm;display:flex;align-items:center;justify-content:center}.prc img{max-width:100%;max-height:100%}
-.fiche{height:127mm;padding:4mm 6mm;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#000;display:flex;flex-direction:column}
+.half{height:136.5mm;box-sizing:border-box;position:relative;overflow:hidden}.half.h1{padding-top:.25mm}.half.h2{padding-top:12.25mm;border-top:1px dashed #000}.cutl{position:absolute;left:0;top:.8mm;font-size:9px}
+.fiche{height:124mm;box-sizing:border-box;padding:0 6mm;overflow:hidden;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#000;display:flex;flex-direction:column}
 .fiche .ti{text-align:center;font-weight:bold;font-size:17px}.fiche .an{text-align:center;font-size:12px;margin-bottom:2.5mm;border-bottom:1.5px solid #000;padding-bottom:2mm}
 .fiche .l{margin:2.2mm 0;display:flex;gap:2mm;align-items:baseline}.fiche .l .d{flex:1;border-bottom:1px dotted #000;min-height:5mm}.fiche .dl{border-bottom:1px dotted #000;height:7mm}
 .fiche table.ft{width:100%;border-collapse:collapse;margin-bottom:2mm}.fiche .ft th,.fiche .ft td{border:1px solid #000;padding:.5mm 2mm;height:6mm;text-align:left;font-size:12.5px}.fiche .ft th{width:37mm;font-weight:bold}.fiche .ft td:last-child{width:52mm}.fiche .ft td.h{font-size:10.5px;font-weight:bold;height:auto}.fiche .ft tr:first-child th{border:0}
@@ -113,7 +114,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='22 (2026-11-21)';
+const APP_VERSION='23 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -598,7 +599,7 @@ function ficheHTML(e,an){const sx=e.sexe==='F'?'Fille':e.sexe==='M'?'Garçon':''
  ${r('Père ou tuteur',esc(e.pere))}${r('Mère ou tutrice',esc(e.mere))}${r('Téléphone(s)',esc(e.tel))}
  <div class="q">Mon projet d'avenir (le métier que je veux faire) :</div><div class="dl"></div><div class="dl"></div>
  <div class="q">Mes sujets de prière :</div><div class="dl"></div><div class="dl"></div><div class="dl"></div><div class="dl"></div><div class="dl"></div></div>`}
-function printFiches(ids,an){const L=ids.map(kid).filter(Boolean).sort(cmpNom);if(!L.length){alert('장학생을 골라 주세요');return}an=an||schoolYear();let h='';for(let i=0;i<L.length;i+=2)h+=`<div class="pgb">${ficheHTML(L[i],an)}${L[i+1]?`<div class="cut">✂ découper ici</div>${ficheHTML(L[i+1],an)}`:''}</div>`;printHTML(h)}
+function printFiches(ids,an){const L=ids.map(kid).filter(Boolean).sort(cmpNom);if(!L.length){alert('장학생을 골라 주세요');return}an=an||schoolYear();let h='';for(let i=0;i<L.length;i+=2)h+=`<div class="pgb"><div class="half h1">${ficheHTML(L[i],an)}</div>${L[i+1]?`<div class="half h2"><span class="cutl">✂ découper ici</span>${ficheHTML(L[i+1],an)}</div>`:''}</div>`;printHTML(h)}
 function ficheMenu(only){const L=DB.enfants.filter(isOn).sort(cmpNom),cur=syOf(today());let yo='';for(let y=cur+1;y>=cur-1;y--)yo+=`<option ${y===cur?'selected':''}>${y}-${y+1}</option>`;
  const bg=modal(`<h3>📝 제출 서류 (장학생 작성용, 프랑스어)</h3>
  <p class="small muted" style="margin-top:0">고른 장학생마다 이름·생년월일·학교·부모·연락처가 채워지고, 비전과 기도제목은 빈칸으로 나옵니다. A4 한 장에 2명씩, 흑백.</p>
