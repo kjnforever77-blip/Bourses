@@ -102,7 +102,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='14 (2026-11-21)';
+const APP_VERSION='15 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -243,7 +243,7 @@ function vEnfant(){
  const L=enfantsF(),i=L.findIndex(x=>x.id===e.id),prev=L[i-1],next=L[i+1];const lc=lastCard(e.id),ds=donsOf(e.id),R=recs(e.id);
  const kv=(k,v,c='')=>`<div class="${c}"><div class="k">${k}</div><div>${v||'<span class="muted">—</span>'}</div></div>`;
  return `<div class="hd"><div class="hp"><button onclick="go('enfants')">← 장학생</button><button ${prev?'':'disabled'} onclick="go('enfant','${prev?.id||''}')">◀</button><button ${next?'':'disabled'} onclick="go('enfant','${next?.id||''}')">▶</button>${i>=0?`<span class="muted small">${i+1} / ${L.length}</span>`:''}</div>
- <div class="hp"><button onclick="printEnfant('${e.id}')">🖨 출력</button><button onclick="editEnfant('${e.id}')">✏️ 정보 수정</button></div></div>
+ <div class="hp"><button onclick="UI.cd={don:'',ids:['${e.id}']};go('envoi')">💌 감사카드</button><button onclick="printEnfant('${e.id}')">🖨 출력</button><button onclick="editEnfant('${e.id}')">✏️ 정보 수정</button></div></div>
  <div class="card"><div class="prof">
   <label style="cursor:pointer" title="대표 사진 바꾸기">${imgTag(e,'pphoto')}<input type="file" accept="image/*" hidden onchange="newPhoto('${e.id}',this.files)"></label>
   <div class="pinfo">
@@ -376,14 +376,17 @@ function saveDon(id){const nom=fv('d_nom');if(!nom){alert('이름을 입력해 �
 function delDon(id){const d=don(id);if(!confirm(`${d.nom}의 모든 자료(연결·보낸 기록)를 지울까요?\n후원이 끝난 경우에는 "후원 끝난 날"만 적는 것을 권합니다.`))return;DB.donateurs=DB.donateurs.filter(x=>x.id!==id);DB.liens=DB.liens.filter(l=>l.donateur!==id);DB.envois=DB.envois.filter(x=>x.donateur!==id);save('후원자 삭제: '+d.nom);closeM();go('donateurs')}
 
 /* ---------- 소식 보내기 (감사카드) ---------- */
-function cardList(){if(UI.cd.ids)return UI.cd.ids.map(kid).filter(Boolean);if(UI.cd.don)return kidsOf(UI.cd.don).map(x=>kid(x.id));return []}
+function cardList(){if(UI.cd.ids)return UI.cd.ids.map(kid).filter(Boolean);if(UI.cd.don==='*')return DB.enfants.filter(isOn).sort(cmpNom);if(UI.cd.don)return kidsOf(UI.cd.don).map(x=>kid(x.id));return []}
+const cardDon=()=>UI.cd.don&&UI.cd.don!=='*'&&DB.settings.cardDonorName!==false?don(UI.cd.don):null;
 function vEnvoi(){
  const D=DB.donateurs.filter(d=>!d.fin&&kidsOf(d.id).length).sort((a,b)=>(lastSent(a.id)||'').localeCompare(lastSent(b.id)||'')||cmpKo(a,b));
- const late=D.filter(d=>daysSince(lastSent(d.id))>SINCE_WARN);const d=UI.cd.don?don(UI.cd.don):null,L=cardList();
+ const late=D.filter(d=>daysSince(lastSent(d.id))>SINCE_WARN);const d=UI.cd.don&&UI.cd.don!=='*'?don(UI.cd.don):null,L=cardList();
  const miss=L.filter(e=>!e.photo||!lastCard(e.id).priere);
  return hd('소식 보내기')+
  `${late.length?`<div class="card"><div class="ch" style="margin-bottom:8px"><h2>소식이 필요한 후원자 <span class="muted small" style="font-weight:400">${SINCE_WARN}일 넘게 안 보냄</span></h2></div><div class="dons">${late.map(x=>`<span class="dchip" onclick="UI.cd={don:'${x.id}',ids:null};render()">${esc(x.nom)} <span class="muted small">${lastSent(x.id)?fmtD(lastSent(x.id)):'보낸 적 없음'} · ${kidsOf(x.id).length}명</span></span>`).join('')}</div></div>`:''}
- <div class="card"><div class="row"><div class="field"><label>후원자</label><select onchange="UI.cd={don:this.value,ids:null};render()"><option value="">— 후원자를 고르세요 —</option>${D.map(x=>`<option value="${x.id}" ${UI.cd.don===x.id?'selected':''}>${esc(x.nom)} (${kidsOf(x.id).length}명)${lastSent(x.id)?' · '+fmtD(lastSent(x.id)):''}</option>`).join('')}</select></div>
+ <div class="card"><div class="row"><div class="field"><label>후원자</label><select onchange="UI.cd={don:this.value,ids:null};render()"><option value="">— 후원자를 고르세요 —</option><option value="*" ${UI.cd.don==='*'?'selected':''}>(후원자 없이) 장학 중인 장학생 전체</option>${D.map(x=>`<option value="${x.id}" ${UI.cd.don===x.id?'selected':''}>${esc(x.nom)} (${kidsOf(x.id).length}명)${lastSent(x.id)?' · '+fmtD(lastSent(x.id)):''}</option>`).join('')}</select></div>
+  ${UI.cd.ids?`<div><span class="tag vi">${esc(L.map(e=>e.nom).join(', '))}</span> <button class="small" onclick="UI.cd={don:'',ids:null};render()">해제</button></div>`:''}
+  <label style="display:flex;gap:6px;align-items:center;padding-bottom:8px"><input type="checkbox" ${DB.settings.cardDonorName!==false?'checked':''} onchange="DB.settings.cardDonorName=this.checked;save();render()"> 카드에 후원자 이름 넣기</label>
   <div class="field" style="flex:1"><label>인사말</label><input value="${esc(DB.settings.cardTitle)}" onchange="DB.settings.cardTitle=this.value;save();render()"></div>
   <div class="field" style="flex:1"><label>아래 문구</label><input value="${esc(DB.settings.cardFooter)}" onchange="DB.settings.cardFooter=this.value;save();render()"></div></div>
   ${miss.length?`<div class="small" style="margin-top:8px;color:var(--warn)">⚠ 사진이나 기도제목이 없는 장학생: ${miss.map(e=>`<a class="lk" onclick="go('enfant','${e.id}')">${esc(e.nom)}</a>`).join(', ')}</div>`:''}
@@ -393,7 +396,7 @@ async function drawPreviews(){const box=$('#cpv');if(!box)return;for(const e of 
 function wrap(ctx,text,maxW){const out=[];String(text||'').split('\n').forEach(par=>{let line='';for(const ch of [...par]){const t=line+ch;if(ctx.measureText(t).width>maxW&&line){const sp=line.lastIndexOf(' ');if(sp>line.length*0.55&&ch!==' '){out.push(line.slice(0,sp));line=line.slice(sp+1)+ch}else{out.push(line);line=ch.trimStart()}}else line=t}out.push(line)});return out}
 function rrect(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
 async function cardCanvas(e){
- const W=1500,H=1000,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),lc=lastCard(e.id),d=UI.cd.don?don(UI.cd.don):null,s=DB.settings;
+ const W=1500,H=1000,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),lc=lastCard(e.id),d=cardDon(),s=DB.settings;
  const F='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif',SC='"Snell Roundhand","Brush Script MT","Segoe Script",cursive';
  const NAVY='#1e3a5f',GOLD='#e0a53a',CREAM='#f8f4ec',INK='#23262f',SUB='#5b6270';
  // 바탕
@@ -432,7 +435,7 @@ async function cardCanvas(e){
  x.fillStyle=GOLD;x.fillRect(70,H-70,W-140,2);x.font=`26px ${F}`;x.fillStyle=SUB;x.textAlign='right';x.fillText(s.cardFooter,W-70,H-30);
  return c}
 async function cardPNG(id){const e=kid(id);(await cardCanvas(e)).toBlob(b=>download(`감사카드_${e.nom}.png`,b),'image/png')}
-async function allPNG(){const L=cardList(),d=UI.cd.don?don(UI.cd.don):null,toDir=DIR&&DSTATE==='ok';const sub=`cartes/${today()}${d?'_'+d.nom.replace(/[\/\\:*?"<>|]/g,''):''}`;
+async function allPNG(){const L=cardList(),d=UI.cd.don&&UI.cd.don!=='*'?don(UI.cd.don):null,toDir=DIR&&DSTATE==='ok';const sub=`cartes/${today()}${d?'_'+d.nom.replace(/[\/\\:*?"<>|]/g,''):''}`;
  for(const e of L){const b=await new Promise(async r=>(await cardCanvas(e)).toBlob(r,'image/png'));const n=`감사카드_${e.nom}.png`;if(toDir)await saveSub(sub,n,b);else{download(n,b);await new Promise(r=>setTimeout(r,400))}}
  toast(toDir?`${sub} 폴더에 ${L.length}장 저장됨`:`${L.length}장 저장됨`);if(d&&confirm(`${d.nom}님께 보낸 것으로 기록할까요?`))recEnvoi(d.id,today(),'감사카드',L.map(e=>e.id))}
 async function printCards(){const L=cardList();let h='';for(let i=0;i<L.length;i+=2){h+='<div class="pgb">';for(const e of L.slice(i,i+2))h+=`<div class="prc"><img src="${(await cardCanvas(e)).toDataURL('image/jpeg',.9)}"></div>`;h+='</div>'}printHTML(h)}
