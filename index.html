@@ -102,7 +102,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='16 (2026-11-21)';
+const APP_VERSION='17 (2026-11-21)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -409,8 +409,10 @@ async function cardCanvas(e){
  x.font=`bold 36px ${F}`;x.fillStyle='#f3e6c9';wrap(x,(d?d.nom+'님, ':'')+s.cardTitle,820).slice(0,2).forEach((l,i)=>x.fillText(l,W/2+190,190+i*44));
  // 사진 (흰 테두리 + 그림자, 띠에 걸치게)
  const px=80,py=70,pw=420,ph=545,u=await photoURL(e);
- x.save();x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=24;x.shadowOffsetY=8;x.fillStyle='#fff';rrect(x,px-14,py-14,pw+28,ph+28,22);x.fill();x.restore();
- x.save();rrect(x,px,py,pw,ph,14);x.clip();
+ const ov=(X,Y,w,h)=>{x.beginPath();x.ellipse(X+w/2,Y+h/2,w/2,h/2,0,0,Math.PI*2);x.closePath()};
+ x.save();x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=24;x.shadowOffsetY=8;x.fillStyle='#fff';ov(px-14,py-14,pw+28,ph+28);x.fill();x.restore();
+ x.save();x.strokeStyle=GOLD;x.lineWidth=5;ov(px-5,py-5,pw+10,ph+10);x.stroke();x.restore();
+ x.save();ov(px,py,pw,ph);x.clip();
  if(u){const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u});if(img){const sr=Math.max(pw/img.width,ph/img.height),sw=pw/sr,sh=ph/sr;x.drawImage(img,(img.width-sw)/2,Math.max(0,(img.height-sh)*0.25),sw,sh,px,py,pw,ph)}}
  else{x.fillStyle='#e6e1d6';x.fillRect(px,py,pw,ph);x.fillStyle='#9a9286';x.font=`32px ${F}`;x.fillText('사진',px+pw/2,py+ph/2)}
  x.restore();
