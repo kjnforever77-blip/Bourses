@@ -114,7 +114,7 @@ table.data tr.click{cursor:pointer}table.data tr.click:hover td{background:#f7f7
    중심: 아이의 이야기(기록) + 후원자와의 연결(시작일~끝난 날) + 보낸 소식
    자료: 자료 폴더의 jangak_donnees.json, photos/(사진), fiches/(문서), cartes/(감사카드), sauvegardes/(백업)
    ===================================================================== */
-const APP_VERSION='23 (2026-11-21)';
+const APP_VERSION='24 (2026-11-25)';
 const DATAFILE='jangak_donnees.json',KEY='jangak_db_v1',OLDFILE='bourses_donnees.json';
 const TYPES=['카드','사진','진급','성적','소식','메모'];
 const TYPE_HELP={카드:'장학생이 쓴 비전·기도제목 카드',사진:'사진 모음',진급:'학교·학년이 바뀜',성적:'성적표·통지표',소식:'장학생·가정 소식',메모:'기타 메모'};
@@ -162,6 +162,7 @@ function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('jangak_fic
 async function idbGet(k){const d=await idb();return new Promise(r=>{const q=d.transaction('h').objectStore('h').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}
 async function idbSet(k,v){const d=await idb();return new Promise(r=>{const t=d.transaction('h','readwrite');t.objectStore('h').put(v,k);t.oncomplete=()=>r()})}
 const DIR_OK=typeof window.showDirectoryPicker==='function';
+const withTO=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT')),ms))]);
 const saveLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}};
 const fh=()=>DIR.getFileHandle(DATAFILE,{create:true});
 async function readData(){const f=await (await fh()).getFile();LASTMOD=f.lastModified;const t=await f.text();return t.trim()?norm(JSON.parse(t)):null}
@@ -195,7 +196,7 @@ async function pickDir(){
  try{const h=await window.showDirectoryPicker({id:'jangak-dir',mode:'readwrite'});let has=false;try{await h.getFileHandle(DATAFILE);has=true}catch(e){}
   if(!has&&!confirm(`이 폴더에 새 자료 파일(${DATAFILE})을 만들까요?`))return;await useDir(h,has?'open':'new');toast('폴더 연결됨')}catch(e){if(e.name!=='AbortError')alert(e.message)}
 }
-async function resumeDir(){try{const h=DIR||await idbGet('dir');if(!h)return pickDir();if(await h.requestPermission({mode:'readwrite'})!=='granted')return;await useDir(h,'resume')}catch(e){DSTATE='error';DERR=e.message;render()}}
+async function resumeDir(){try{const h=DIR||await idbGet('dir');if(!h)return pickDir();if(await withTO(h.requestPermission({mode:'readwrite'}),20000)!=='granted')return;await withTO(useDir(h,'resume'),15000)}catch(e){DSTATE='error';DERR=e.message==='TIMEOUT'?'자료 폴더를 찾을 수 없음':e.message;DIR=null;render()}}
 async function checkExternal(){if(!DIR||DSTATE!=='ok'||DIRTY)return;try{const f=await (await fh()).getFile();if(f.lastModified===LASTMOD)return;const d=await readData();if(d){DB=d;saveLocal();render()}}catch(e){}}
 window.addEventListener('focus',checkExternal);
 window.addEventListener('beforeunload',e=>{if(DIRTY&&DSTATE==='ok'){writeData();e.preventDefault();e.returnValue=''}});
@@ -271,7 +272,7 @@ const renderFoot=()=>{const s=$('#syncst');if(s)s.textContent=syncLabel()};
 function renderNav(){const it=[['enfants','👧 장학생'],['donateurs','🤝 후원자'],['envoi','💌 소식 보내기'],['reglages','⚙️ 설정']];const cur={enfant:'enfants',donateur:'donateurs'}[UI.view]||UI.view;
  $('#nav').innerHTML=`<div class="brand">장학생 관리</div>${it.map(([v,l])=>`<a class="${cur===v?'active':''}" onclick="go('${v}')">${l}</a>`).join('')}
  <div class="foot"><div id="syncst" style="color:#eceaf8">${esc(syncLabel())}</div>${DSTATE==='ok'?'':`<button onclick="${DSTATE==='need'?'resumeDir()':'pickDir()'}">📁 ${DSTATE==='need'?'폴더 다시 연결':'자료 폴더 연결'}</button>`}<div style="margin-top:8px">버전 ${APP_VERSION}</div></div>`}
-function banner(){if(DSTATE==='ok')return '';if(DSTATE==='need')return `<div class="banner">자료 폴더 연결을 다시 허락해 주세요. <button class="small primary" onclick="resumeDir()">폴더 다시 연결</button></div>`;return `<div class="banner">자료 폴더가 연결되지 않았습니다. <button class="small primary" onclick="pickDir()">폴더 연결</button></div>`}
+function banner(){if(DSTATE==='ok')return '';if(DSTATE==='need')return `<div class="banner">자료 폴더 연결을 다시 허락해 주세요. <button class="small primary" onclick="resumeDir()">폴더 다시 연결</button></div>`;if(DSTATE==='error')return `<div class="banner">자료 폴더를 찾을 수 없습니다. 폴더 이름이나 위치가 바뀌었으면 <b>장학생 관리</b> 폴더를 다시 선택해 주세요. (지금 보이는 내용은 이 브라우저에 저장된 사본입니다.) <button class="small primary" onclick="pickDir()">📁 폴더 다시 선택</button></div>`;return `<div class="banner">자료 폴더가 연결되지 않았습니다. <button class="small primary" onclick="pickDir()">폴더 연결</button></div>`}
 function render(){if(!DB){renderWelcome();return}renderNav();const v={enfants:vEnfants,enfant:vEnfant,donateurs:vDonateurs,donateur:vDonateur,envoi:vEnvoi,reglages:vReglages}[UI.view]||vEnfants;$('#main').innerHTML=banner()+v();fillImgs($('#main'));if(UI.view==='envoi')drawPreviews()}
 function renderWelcome(){$('#nav').innerHTML='<div class="brand">장학생 관리</div>';$('#main').innerHTML=`<div class="card" style="max-width:620px"><h2 style="margin-bottom:10px">시작하기</h2><p>자료를 저장할 폴더(구글 드라이브 › 장학 › 장학생 관리)를 고르세요. 그 폴더에 자료 파일, 사진, 문서, 감사카드, 자동 백업이 함께 저장됩니다.</p><button class="primary" onclick="pickDir()">📁 자료 폴더 선택</button>${DIR_OK?'':'<p class="banner" style="margin-top:12px">이 브라우저에서는 폴더 연결이 안 됩니다. 맥북의 크롬에서 열어 주세요.</p>'}</div>`}
 const hd=(t,b='')=>`<div class="hd"><h1>${t}</h1><div class="hp">${b}</div></div>`;
@@ -655,7 +656,8 @@ document.addEventListener('mouseover',ev=>{const t=ev.target;const h=$('#hov')||
 /* ---------- 시작 ---------- */
 (async()=>{
  try{const t=localStorage.getItem(KEY);if(t)DB=norm(JSON.parse(t))}catch(e){}
- if(DIR_OK){try{const h=await idbGet('dir');if(h){DIR=h;if(await h.queryPermission({mode:'readwrite'})==='granted')await useDir(h,'resume');else DSTATE='need'}}catch(e){DSTATE='error';DERR=e.message}}
+ render();
+ if(DIR_OK){try{const h=await withTO(idbGet('dir'),5000);if(h){DIR=h;if(await withTO(h.queryPermission({mode:'readwrite'}),6000)==='granted')await withTO(useDir(h,'resume'),15000);else DSTATE='need'}}catch(e){DSTATE='error';DERR=e.message==='TIMEOUT'?'자료 폴더를 찾을 수 없음':e.name==='NotFoundError'?'자료 폴더를 찾을 수 없음':e.message;DIR=null}}
  render();
  if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{});navigator.serviceWorker.addEventListener('message',m=>{if(m.data==='bourses-update'&&confirm('새 버전이 있습니다. 지금 새로고침할까요?'))location.reload()})}
 })();
